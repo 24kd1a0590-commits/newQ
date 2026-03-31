@@ -166,12 +166,15 @@ async function init() {
         if (error) throw error;
 
         // Map the data to ensure it fits the UI (handling missing fees/ratings)
-        doctors = data.map(doc => ({
-            ...doc,
-            rating: doc.rating || 4.5, // Default if empty
-            fee: doc.fee || 100,       // Default if empty
-            crowd: doc.crowd || "Low"  // Default if empty
-        }));
+ doctors = data.map(doc => ({
+    id: doc.id,
+    name: doc.name,
+    spec: doc.specialization,
+    fee: doc.fee || 100,
+    rating: doc.rating || 4.5,
+    crowd: doc.crowd || "Low",
+    img: ""
+}));
 
         renderDoctors();
         lucide.createIcons();
@@ -202,7 +205,7 @@ function renderDoctors() {
                     <i data-lucide="star" class="w-4 h-4 fill-current"></i> ${doc.rating}
                 </div>
                 <div class="text-gray-400">|</div>
-                <div class="font-semibold">$${doc.fee}</div>
+                <div class="font-semibold">₹${doc.fee}</div>
             </div>
             <button onclick="openBooking(${doc.id})" class="w-full py-2 bg-gray-50 text-blue-600 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition">
                 Book Now
