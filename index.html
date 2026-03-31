@@ -173,6 +173,7 @@ allDoctors = data.map(doc => ({
     spec: doc.specialization,
     fee: doc.fee || 100,
     rating: doc.rating || 4.5,
+    location: doc.location || "Downtown",
     crowd: doc.crowd || "Low",
     img: ""
 }));
@@ -185,6 +186,7 @@ doctors = [...allDoctors];
 document.getElementById('ratingFilter').addEventListener('change', applyFilters);
 document.getElementById('feeFilter').addEventListener('change', applyFilters);
 document.getElementById('crowdFilter').addEventListener('change', applyFilters);
+document.getElementById('locationFilter').addEventListener('change', applyFilters);
     } catch (err) {
     console.error("FULL ERROR:", err);
     alert(err.message);
@@ -237,6 +239,7 @@ function renderDoctors() {
     const rating = document.getElementById('ratingFilter').value;
     const fee = document.getElementById('feeFilter').value;
     const crowd = document.getElementById('crowdFilter').value;
+    const location = document.getElementById('locationFilter').value;
 
     doctors = allDoctors.filter(doc => {
 
@@ -252,7 +255,12 @@ function renderDoctors() {
         if (crowd === "Crowd: Low") matchesCrowd = doc.crowd === "Low";
         if (crowd === "Crowd: Medium") matchesCrowd = doc.crowd === "Medium";
 
-        return matchesSearch && matchesRating && matchesCrowd;
+        let matchesLocation = true;
+
+if (location === "Downtown") matchesLocation = doc.location === "Downtown";
+if (location === "Suburbs") matchesLocation = doc.location === "Suburbs";
+
+        return matchesSearch && matchesRating && matchesCrowd && matchesLocation;
     });
 
     if (fee === "Fee: Low to High") {
