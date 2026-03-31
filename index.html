@@ -54,7 +54,7 @@
             <header class="h-16 bg-white border-b border-gray-200 flex items-center px-8 sticky top-0 z-10">
                 <div class="relative w-full max-w-xl">
                     <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                    <input type="text" placeholder="Search doctors, specialties, or clinics..." 
+                    <input id="searchInput" type="text" placeholder="Search doctors, specialties, or clinics..." 
                         class="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                 </div>
             </header>
@@ -68,20 +68,20 @@
                             <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
                             <span class="font-semibold">Filters:</span>
                         </div>
-                        <select class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
+                        <select id="locationFilter" class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
                             <option>Location (All)</option>
                             <option>Downtown</option>
                             <option>Suburbs</option>
                         </select>
-                        <select class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
+                        <select id="ratingFilter" class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
                             <option>Rating (4.0+)</option>
                             <option>5.0 Only</option>
                         </select>
-                        <select class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
+                        <select id="feeFilter" class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
                             <option>Fee: Low to High</option>
                             <option>Fee: High to Low</option>
                         </select>
-                        <select class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
+                        <select id="crowdFilter" class="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm outline-none">
                             <option>Crowd: Low</option>
                             <option>Crowd: Medium</option>
                         </select>
@@ -148,6 +148,7 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let doctors = [];
+let allDoctors = [];
 let myBookings = [
     { id: 101, docName: "Dr. Sarah Jenkins", date: "Oct 24, 2023", time: "10:30 AM", status: "Completed" }
 ];
@@ -166,7 +167,7 @@ async function init() {
         if (error) throw error;
 
         // Map the data to ensure it fits the UI (handling missing fees/ratings)
- doctors = data.map(doc => ({
+allDoctors = data.map(doc => ({
     id: doc.id,
     name: doc.name,
     spec: doc.specialization,
@@ -176,8 +177,14 @@ async function init() {
     img: ""
 }));
 
+doctors = [...allDoctors];
+
         renderDoctors();
         lucide.createIcons();
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('ratingFilter').addEventListener('change', applyFilters);
+document.getElementById('feeFilter').addEventListener('change', applyFilters);
+document.getElementById('crowdFilter').addEventListener('change', applyFilters);
     } catch (err) {
     console.error("FULL ERROR:", err);
     alert(err.message);
@@ -214,7 +221,41 @@ function renderDoctors() {
     `).join('');
     lucide.createIcons();
 }
+    function applyFilters() {
+    const searchText = document.getElementById('searchInput').value.toLowerCase();
+    const rating = document.getElementById('ratingFilter').value;
+    const fee = document.getElementById('feeFilter').value;
+    const crowd = document.getElementById('crowdFilter').value;
 
+    doctors = allDoctors.filter(doc => {
+
+        const matchesSearch =
+            doc.name.toLowerCase().includes(searchText) ||
+            doc.spec.toLowerCase().includes(searchText);
+
+        let matchesRating = true;
+        if (rating === "5.0 Only") matchesRating = doc.rating === 5;
+        else if (rating === "Rating (4.0+)") matchesRating = doc.rating >= 4;
+
+        let matchesCrowd = true;
+        if (crowd === "Crowd: Low") matchesCrowd = doc.crowd === "Low";
+        if (crowd === "Crowd: Medium") matchesCrowd = doc.crowd === "Medium";
+
+        return matchesSearch && matchesRating && matchesCrowd;
+    });
+
+    if (fee === "Fee: Low to High") {
+        doctors.sort((a, b) => a.fee - b.fee);
+    } else if (fee === "Fee: High to Low") {
+        doctors.sort((a, b) => b.fee - a.fee);
+    }
+
+    renderDoctors();
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('ratingFilter').addEventListener('change', applyFilters);
+document.getElementById('feeFilter').addEventListener('change', applyFilters);
+document.getElementById('crowdFilter').addEventListener('change', applyFilters);
+}
 // 4. UI & NAVIGATION LOGIC (KEEP THESE AS IS)
 function showPage(page) {
     const home = document.getElementById('home-page');
@@ -239,7 +280,7 @@ function openBooking(docId) {
         <p class="font-bold text-blue-800">${selectedDoctor.name}</p>
         <p class="text-xs text-blue-600">${selectedDoctor.spec}</p>
     `;
-    document.getElementById('summary-fee').innerText = `$${selectedDoctor.fee}`;
+    document.getElementById('summary-fee').innerText = `₹${selectedDoctor.fee}`;
 
     const times = ["09:00", "10:30", "13:00", "14:30", "16:00", "17:00"];
     const slotsDiv = document.getElementById('time-slots');
