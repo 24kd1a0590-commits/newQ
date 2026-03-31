@@ -142,145 +142,163 @@
     </div>
 
     <script>
-        // DUMMY DATA
-        const doctors = [
-            { id: 1, name: "Dr. Sarah Jenkins", spec: "Cardiologist", rating: 4.9, fee: 120, avail: "Available", crowd: "Low", gender: "Female", img: "SJ" },
-            { id: 2, name: "Dr. Marcus Chen", spec: "Dermatologist", rating: 4.7, fee: 90, avail: "2 slots left", crowd: "High", gender: "Male", img: "MC" },
-            { id: 3, name: "Dr. Alanna Reed", spec: "Pediatrician", rating: 4.8, fee: 100, avail: "Available", crowd: "Medium", gender: "Female", img: "AR" },
-            { id: 4, name: "Dr. James Wilson", spec: "Neurologist", rating: 4.6, fee: 150, avail: "Available", crowd: "Low", gender: "Male", img: "JW" },
-        ];
+  // 1. INITIALIZE SUPABASE
+const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        const myBookings = [
-            { id: 101, docName: "Dr. Sarah Jenkins", date: "Oct 24, 2023", time: "10:30 AM", status: "Completed" }
-        ];
+let doctors = [];
+let myBookings = [
+    { id: 101, docName: "Dr. Sarah Jenkins", date: "Oct 24, 2023", time: "10:30 AM", status: "Completed" }
+];
 
-        let selectedDoctor = null;
-        let selectedTime = null;
+let selectedDoctor = null;
+let selectedTime = null;
 
-        // INITIALIZE
-        function init() {
-            renderDoctors();
-            lucide.createIcons();
-        }
+// 2. FETCH DATA FROM YOUR DATASET
+async function init() {
+    try {
+        // This pulls the data from the table you named 'doctors'
+        const { data, error } = await supabaseClient
+            .from('doctors')
+            .select('*');
 
-        // RENDER DOCTOR CARDS
-        function renderDoctors() {
-            const grid = document.getElementById('doctor-grid');
-            grid.innerHTML = doctors.map(doc => `
-                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-lg">${doc.img}</div>
-                        <span class="text-xs font-bold px-2 py-1 rounded-full ${doc.crowd === 'Low' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}">
-                            ${doc.crowd} Crowd
-                        </span>
-                    </div>
-                    <h3 class="font-bold text-gray-900 group-hover:text-blue-600 transition">${doc.name}</h3>
-                    <p class="text-sm text-gray-500 mb-3">${doc.spec}</p>
-                    <div class="flex items-center gap-4 mb-5 text-sm">
-                        <div class="flex items-center gap-1 text-yellow-500 font-bold">
-                            <i data-lucide="star" class="w-4 h-4 fill-current"></i> ${doc.rating}
-                        </div>
-                        <div class="text-gray-400">|</div>
-                        <div class="font-semibold">$${doc.fee}</div>
-                    </div>
-                    <button onclick="openBooking(${doc.id})" class="w-full py-2 bg-gray-50 text-blue-600 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition">
-                        Book Now
-                    </button>
+        if (error) throw error;
+
+        // Map the data to ensure it fits the UI (handling missing fees/ratings)
+        doctors = data.map(doc => ({
+            ...doc,
+            rating: doc.rating || 4.5, // Default if empty
+            fee: doc.fee || 100,       // Default if empty
+            crowd: doc.crowd || "Low"  // Default if empty
+        }));
+
+        renderDoctors();
+        lucide.createIcons();
+    } catch (err) {
+    console.error("FULL ERROR:", err);
+    alert(err.message);
+}
+    console.log(data);
+}
+
+// 3. RENDER DOCTOR CARDS
+function renderDoctors() {
+    const grid = document.getElementById('doctor-grid');
+    grid.innerHTML = doctors.map(doc => `
+        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group">
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-[10px] text-center p-1 leading-tight">
+                    ${doc.img ? doc.img.substring(0, 2).toUpperCase() : 'DR'}
                 </div>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        // NAVIGATION LOGIC
-        function showPage(page) {
-            const home = document.getElementById('home-page');
-            const status = document.getElementById('status-page');
-            if(page === 'home') {
-                home.classList.remove('hidden');
-                status.classList.add('hidden');
-            } else {
-                home.classList.add('hidden');
-                status.classList.remove('hidden');
-                renderBookings();
-            }
-        }
-
-        // BOOKING LOGIC
-        function openBooking(docId) {
-            selectedDoctor = doctors.find(d => d.id === docId);
-            document.getElementById('booking-content-empty').classList.add('hidden');
-            const activePanel = document.getElementById('booking-content-active');
-            activePanel.classList.remove('hidden');
-
-            document.getElementById('selected-doc-info').innerHTML = `
-                <p class="font-bold text-blue-800">${selectedDoctor.name}</p>
-                <p class="text-xs text-blue-600">${selectedDoctor.spec}</p>
-            `;
-            document.getElementById('summary-fee').innerText = `$${selectedDoctor.fee}`;
-
-            // Render Time Slots
-            const times = ["09:00", "10:30", "13:00", "14:30", "16:00", "17:00"];
-            const slotsDiv = document.getElementById('time-slots');
-            slotsDiv.innerHTML = times.map(t => `
-                <button onclick="selectTime('${t}', this)" class="slot-btn border border-gray-200 py-2 text-sm rounded-lg hover:border-blue-500 transition">
-                    ${t}
-                </button>
-            `).join('');
-        }
-
-        function selectTime(time, el) {
-            selectedTime = time;
-            document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600'));
-            el.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
-        }
-
-        function confirmBooking() {
-            if(!selectedTime) return alert("Please select a time slot first!");
-            
-            const newBooking = {
-                id: Date.now(),
-                docName: selectedDoctor.name,
-                date: "Today",
-                time: selectedTime,
-                status: "Booked"
-            };
-            myBookings.unshift(newBooking);
-            
-            // Show Toast
-            const toast = document.getElementById('toast');
-            toast.classList.remove('translate-y-32');
-            setTimeout(() => toast.classList.add('translate-y-32'), 3000);
-            
-            closeBooking();
-        }
-
-        function closeBooking() {
-            document.getElementById('booking-content-active').classList.add('hidden');
-            document.getElementById('booking-content-empty').classList.remove('hidden');
-            selectedDoctor = null;
-            selectedTime = null;
-        }
-
-        function renderBookings() {
-            const list = document.getElementById('bookings-list');
-            list.innerHTML = myBookings.map(b => `
-                <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i data-lucide="user" class="w-5 h-5"></i></div>
-                        <div>
-                            <p class="font-bold">${b.docName}</p>
-                            <p class="text-sm text-gray-500">${b.date} • ${b.time}</p>
-                        </div>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status === 'Booked' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}">
-                        ${b.status}
-                    </span>
+                <span class="text-xs font-bold px-2 py-1 rounded-full ${doc.crowd === 'Low' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}">
+                    ${doc.crowd} Crowd
+                </span>
+            </div>
+            <h3 class="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm leading-tight">${doc.name}</h3>
+            <p class="text-xs text-gray-500 mb-3">${doc.spec}</p>
+            <div class="flex items-center gap-4 mb-5 text-sm">
+                <div class="flex items-center gap-1 text-yellow-500 font-bold">
+                    <i data-lucide="star" class="w-4 h-4 fill-current"></i> ${doc.rating}
                 </div>
-            `).join('');
-            lucide.createIcons();
-        }
+                <div class="text-gray-400">|</div>
+                <div class="font-semibold">$${doc.fee}</div>
+            </div>
+            <button onclick="openBooking(${doc.id})" class="w-full py-2 bg-gray-50 text-blue-600 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition">
+                Book Now
+            </button>
+        </div>
+    `).join('');
+    lucide.createIcons();
+}
 
-        window.onload = init;
+// 4. UI & NAVIGATION LOGIC (KEEP THESE AS IS)
+function showPage(page) {
+    const home = document.getElementById('home-page');
+    const status = document.getElementById('status-page');
+    if(page === 'home') {
+        home.classList.remove('hidden');
+        status.classList.add('hidden');
+    } else {
+        home.classList.add('hidden');
+        status.classList.remove('hidden');
+        renderBookings();
+    }
+}
+
+function openBooking(docId) {
+    selectedDoctor = doctors.find(d => d.id === docId);
+    document.getElementById('booking-content-empty').classList.add('hidden');
+    const activePanel = document.getElementById('booking-content-active');
+    activePanel.classList.remove('hidden');
+
+    document.getElementById('selected-doc-info').innerHTML = `
+        <p class="font-bold text-blue-800">${selectedDoctor.name}</p>
+        <p class="text-xs text-blue-600">${selectedDoctor.spec}</p>
+    `;
+    document.getElementById('summary-fee').innerText = `$${selectedDoctor.fee}`;
+
+    const times = ["09:00", "10:30", "13:00", "14:30", "16:00", "17:00"];
+    const slotsDiv = document.getElementById('time-slots');
+    slotsDiv.innerHTML = times.map(t => `
+        <button onclick="selectTime('${t}', this)" class="slot-btn border border-gray-200 py-2 text-sm rounded-lg hover:border-blue-500 transition">
+            ${t}
+        </button>
+    `).join('');
+}
+
+function selectTime(time, el) {
+    selectedTime = time;
+    document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600'));
+    el.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+}
+
+function confirmBooking() {
+    if(!selectedTime) return alert("Please select a time slot first!");
+    
+    const newBooking = {
+        id: Date.now(),
+        docName: selectedDoctor.name,
+        date: "Today",
+        time: selectedTime,
+        status: "Booked"
+    };
+    myBookings.unshift(newBooking);
+    
+    const toast = document.getElementById('toast');
+    toast.classList.remove('translate-y-32');
+    setTimeout(() => toast.classList.add('translate-y-32'), 3000);
+    
+    closeBooking();
+}
+
+function closeBooking() {
+    document.getElementById('booking-content-active').classList.add('hidden');
+    document.getElementById('booking-content-empty').classList.remove('hidden');
+    selectedDoctor = null;
+    selectedTime = null;
+}
+
+function renderBookings() {
+    const list = document.getElementById('bookings-list');
+    list.innerHTML = myBookings.map(b => `
+        <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i data-lucide="user" class="w-5 h-5"></i></div>
+                <div>
+                    <p class="font-bold">${b.docName}</p>
+                    <p class="text-sm text-gray-500">${b.date} • ${b.time}</p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status === 'Booked' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}">
+                ${b.status}
+            </span>
+        </div>
+    `).join('');
+    lucide.createIcons();
+}
+
+window.onload = init;
     </script>
 </body>
 </html>
