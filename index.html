@@ -191,6 +191,12 @@ document.getElementById('crowdFilter').addEventListener('change', applyFilters);
 }
     console.log(data);
 }
+function highlightText(text, search) {
+    if (!search) return text;
+
+    const regex = new RegExp(`(${search})`, 'gi');
+    return text.replace(regex, `<span class="bg-yellow-200">$1</span>`);
+}
 
 // 3. RENDER DOCTOR CARDS
 function renderDoctors() {
@@ -205,8 +211,13 @@ function renderDoctors() {
                     ${doc.crowd} Crowd
                 </span>
             </div>
-            <h3 class="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm leading-tight">${doc.name}</h3>
-            <p class="text-xs text-gray-500 mb-3">${doc.spec}</p>
+           <h3 class="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm leading-tight">
+    ${highlightText(doc.name, document.getElementById('searchInput').value)}
+</h3>
+
+<p class="text-xs text-gray-500 mb-3">
+    ${highlightText(doc.spec, document.getElementById('searchInput').value)}
+</p>
             <div class="flex items-center gap-4 mb-5 text-sm">
                 <div class="flex items-center gap-1 text-yellow-500 font-bold">
                     <i data-lucide="star" class="w-4 h-4 fill-current"></i> ${doc.rating}
