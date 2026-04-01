@@ -86,7 +86,48 @@
                             <option>Crowd: Medium</option>
                         </select>
                     </div>
+<div class="mb-8">
+    <h2 class="text-lg font-bold mb-4">Quick Symptoms</h2>
 
+    <div class="grid grid-cols-3 md:grid-cols-6 gap-4">
+
+        <div onclick="selectProblem('Cardiologist')" class="cursor-pointer text-center">
+            <img src="https://img.icons8.com/color/96/heart-with-pulse.png" class="mx-auto w-12"/>
+            <p class="text-xs mt-2">Heart</p>
+        </div>
+
+        <div onclick="selectProblem('Neurologist')" class="cursor-pointer text-center">
+            <img src="https://img.icons8.com/color/96/brain.png" class="mx-auto w-12"/>
+            <p class="text-xs mt-2">Headache</p>
+        </div>
+
+        <div onclick="selectProblem('General Physician')" class="cursor-pointer text-center">
+            <img src="https://img.icons8.com/color/96/thermometer.png" class="mx-auto w-12"/>
+            <p class="text-xs mt-2">Fever</p>
+        </div>
+
+        <div onclick="selectProblem('Dermatologist')" class="cursor-pointer text-center">
+            <img src="https://img.icons8.com/color/96/skin.png" class="mx-auto w-12"/>
+            <p class="text-xs mt-2">Skin</p>
+        </div>
+
+        <!-- Bone -->
+<div onclick="selectProblem('Orthopedic')" 
+class="cursor-pointer text-center hover:bg-blue-50 p-2 rounded-lg">
+    <img src="https://img.icons8.com/color/96/bones.png" class="mx-auto w-12"/>
+    <p class="text-xs mt-2">Bone</p>
+</div>
+
+<!-- ENT -->
+<div onclick="selectProblem('ENT')" 
+class="cursor-pointer text-center hover:bg-blue-50 p-2 rounded-lg">
+    <img src="https://img.icons8.com/color/96/ear-hearing.png" class="mx-auto w-12"/>
+    <p class="text-xs mt-2">ENT</p>
+</div>
+
+    </div>
+</div>
+                  
                     <h2 class="text-xl font-bold mb-6">Available Doctors</h2>
                     <div id="doctor-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                         </div>
@@ -155,7 +196,13 @@ let myBookings = [
 
 let selectedDoctor = null;
 let selectedTime = null;
+function selectProblem(specialization) {
+    // Set search box value automatically
+    document.getElementById('searchInput').value = specialization;
 
+    // Trigger filtering
+    applyFilters();
+}
 // 2. FETCH DATA FROM YOUR DATASET
 async function init() {
     try {
@@ -243,9 +290,9 @@ function renderDoctors() {
 
     doctors = allDoctors.filter(doc => {
 
-        const matchesSearch =
-            doc.name.toLowerCase().includes(searchText) ||
-            doc.spec.toLowerCase().includes(searchText);
+       const matchesSearch =
+    doc.name.toLowerCase().includes(searchText) ||
+    doc.spec.toLowerCase().includes(searchText);
 
         let matchesRating = true;
         if (rating === "5.0 Only") matchesRating = doc.rating === 5;
