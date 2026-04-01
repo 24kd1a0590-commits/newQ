@@ -121,7 +121,7 @@
                             </div>
                             <div class="flex justify-between text-sm mb-4">
                                 <span class="text-gray-500">Service Tax</span>
-                                <span class="font-semibold">$2.00</span>
+                                <span class="font-semibold">₹2.00</span>
                             </div>
                             <button onclick="confirmBooking()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition transform active:scale-95 shadow-lg shadow-blue-200">
                                 Confirm Booking
@@ -270,10 +270,7 @@ if (location === "Suburbs") matchesLocation = doc.location === "Suburbs";
     }
 
     renderDoctors();
-    document.getElementById('searchInput').addEventListener('input', applyFilters);
-document.getElementById('ratingFilter').addEventListener('change', applyFilters);
-document.getElementById('feeFilter').addEventListener('change', applyFilters);
-document.getElementById('crowdFilter').addEventListener('change', applyFilters);
+    
 }
 // 4. UI & NAVIGATION LOGIC (KEEP THESE AS IS)
 function showPage(page) {
@@ -316,25 +313,36 @@ function selectTime(time, el) {
     el.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
 }
 
-function confirmBooking() {
-    if(!selectedTime) return alert("Please select a time slot first!");
-    
-    const newBooking = {
-        id: Date.now(),
-        docName: selectedDoctor.name,
-        date: "Today",
-        time: selectedTime,
-        status: "Booked"
-    };
-    myBookings.unshift(newBooking);
-    
+async function confirmBooking() {
+    if (!selectedTime) return alert("Please select a time slot first!");
+
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .insert([
+            {
+                doctor_name: selectedDoctor.name,
+                date: "Today",
+                time: selectedTime,
+                status: "Booked"
+            }
+        ]);
+
+    if (error) {
+        alert("Error saving booking");
+        console.error(error);
+        return;
+    }
+
+    // success UI
     const toast = document.getElementById('toast');
     toast.classList.remove('translate-y-32');
     setTimeout(() => toast.classList.add('translate-y-32'), 3000);
-    
-    closeBooking();
-}
 
+    closeBooking();
+
+    // ✅ IMPORTANT: refresh bookings
+    await renderBookings();
+}
 function closeBooking() {
     document.getElementById('booking-content-active').classList.add('hidden');
     document.getElementById('booking-content-empty').classList.remove('hidden');
@@ -342,22 +350,36 @@ function closeBooking() {
     selectedTime = null;
 }
 
-function renderBookings() {
+async function renderBookings() {
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .order('id', { ascending: false });
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
     const list = document.getElementById('bookings-list');
-    list.innerHTML = myBookings.map(b => `
+
+    list.innerHTML = data.map(b => `
         <div class="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i data-lucide="user" class="w-5 h-5"></i></div>
+                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
                 <div>
-                    <p class="font-bold">${b.docName}</p>
+                    <p class="font-bold">${b.doctor_name}</p>
                     <p class="text-sm text-gray-500">${b.date} • ${b.time}</p>
                 </div>
             </div>
-            <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status === 'Booked' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}">
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-600">
                 ${b.status}
             </span>
         </div>
     `).join('');
+
     lucide.createIcons();
 }
 
