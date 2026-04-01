@@ -46,29 +46,38 @@
         <!-- DASHBOARD -->
         <section id="home">
             <h2 class="text-2xl font-bold mb-6">Welcome, Doctor 👋</h2>
+<div class="grid md:grid-cols-4 gap-6 mb-8">
 
-            <div class="grid md:grid-cols-3 gap-6 mb-8">
+    <div class="card">
+        <p>Total Patients</p>
+        <h3>120</h3>
+    </div>
 
-                <div class="card">
-                    <p>Total Patients</p>
-                    <h3>120</h3>
-                </div>
+    <div class="card">
+        <p>Today's Patients</p>
+        <h3 id="todayPatients">8</h3>
+    </div>
 
-                <div class="card">
-                    <p>Today's Appointments</p>
-                    <h3>8</h3>
-                </div>
+    <div class="card">
+        <p>Weekly Patients</p>
+        <h3 id="weeklyPatients">42</h3>
+    </div>
 
-                <div class="card">
-                    <p>Available Slots</p>
-                    <h3>6</h3>
-                </div>
+    <div class="card">
+        <p>Available Slots</p>
+        <h3>6</h3>
+    </div>
 
-            </div>
+</div>
 
             <!-- Recent -->
             <div class="bg-white rounded-2xl p-6 shadow">
                 <h3 class="font-bold mb-4">Recent Bookings</h3>
+                <div class="bg-white rounded-2xl p-6 shadow mt-6">
+    <h3 class="font-bold mb-4">Busy Hours (Today)</h3>
+
+    <div id="busy-hours" class="space-y-3"></div>
+</div>
 
                 <div class="space-y-3">
                     <div class="flex justify-between p-3 bg-gray-50 rounded-lg">
@@ -211,8 +220,49 @@ function showPage(page) {
     document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
     event.target.classList.add("active");
 }
+function generateStats() {
 
+    // Example data (later connect to Supabase)
+    const bookings = [
+        "09:00", "09:30", "10:00", "10:30",
+        "10:30", "11:00", "12:00", "12:00",
+        "14:00", "15:00", "15:00", "16:00"
+    ];
+
+    // TODAY COUNT
+    document.getElementById("todayPatients").innerText = bookings.length;
+
+    // WEEK COUNT (fake for now)
+    document.getElementById("weeklyPatients").innerText = bookings.length * 5;
+
+    // BUSY HOURS CALCULATION
+    const hourMap = {};
+
+    bookings.forEach(time => {
+        const hour = time.split(":")[0];
+        hourMap[hour] = (hourMap[hour] || 0) + 1;
+    });
+
+    const container = document.getElementById("busy-hours");
+
+    container.innerHTML = Object.keys(hourMap).map(hour => {
+        const count = hourMap[hour];
+
+        return `
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>${hour}:00</span>
+                    <span>${count} patients</span>
+                </div>
+                <div class="w-full bg-gray-200 h-2 rounded">
+                    <div class="bg-blue-600 h-2 rounded" style="width: ${count * 15}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 lucide.createIcons();
+generateStats();
 </script>
 
 </body>
