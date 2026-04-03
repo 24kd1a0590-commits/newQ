@@ -94,23 +94,26 @@ body { font-family: 'Inter', sans-serif; }
                             <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
                             <span class="font-semibold">Filters:</span>
                         </div>
-                        <select id="locationFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none"
-                            <option>Location (All)</option>
-                            <option>Downtown</option>
-                            <option>Suburbs</option>
-                        </select>
-                        <select id="ratingFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none"
-                            <option>Rating (4.0+)</option>
-                            <option>5.0 Only</option>
-                        </select>
-                        <select id="feeFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none"
-                            <option>Fee: Low to High</option>
-                            <option>Fee: High to Low</option>
-                        </select>
-                        <select id="crowdFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none"
-                            <option>Crowd: Low</option>
-                            <option>Crowd: Medium</option>
-                        </select>
+                       <select id="locationFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
+    <option class="text-black bg-white">Location (All)</option>
+    <option class="text-black bg-white">Downtown</option>
+    <option class="text-black bg-white">Suburbs</option>
+</select>
+
+<select id="ratingFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
+    <option class="text-black bg-white">Rating (4.0+)</option>
+    <option class="text-black bg-white">5.0 Only</option>
+</select>
+
+<select id="feeFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
+    <option class="text-black bg-white">Fee: Low to High</option>
+    <option class="text-black bg-white">Fee: High to Low</option>
+</select>
+
+<select id="crowdFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
+    <option class="text-black bg-white">Crowd: Low</option>
+    <option class="text-black bg-white">Crowd: Medium</option>
+</select>
                     </div>
 <div class="mb-8">
     <h2 class="text-lg font-bold mb-4">Quick Symptoms</h2>
@@ -286,7 +289,7 @@ function renderDoctors() {
                     ${doc.crowd} Crowd
                 </span>
             </div>
-           <h3 class=""font-bold text-white" group-hover:text-blue-600 transition text-sm leading-tight">
+      <h3 class="font-bold text-white group-hover:text-blue-600 transition text-sm leading-tight">
     ${highlightText(doc.name, document.getElementById('searchInput').value)}
 </h3>
 
