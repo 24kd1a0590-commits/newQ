@@ -6,20 +6,17 @@
 <title>MEDIQ | Doctor Dashboard</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
   background: linear-gradient(to right, #1e3a8a, #4f46e5);
 }
-
-/* Glass card */
 .glass {
   background: rgba(255,255,255,0.1);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.2);
 }
-
-/* Status colors */
 .waiting { background: #facc15; }
 .progress { background: #3b82f6; }
 .done { background: #22c55e; }
@@ -28,6 +25,11 @@ body {
 </head>
 
 <body class="text-white min-h-screen p-6">
+
+<!-- 🔔 Notification -->
+<div id="notification" class="fixed top-5 right-5 bg-green-500 px-4 py-2 rounded hidden">
+  New patient added!
+</div>
 
 <!-- Top Bar -->
 <div class="flex justify-between items-center mb-6">
@@ -40,86 +42,149 @@ body {
 
 <!-- Stats -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-
   <div class="glass p-5 rounded-xl">
-    <h2 class="text-lg">Total Patients</h2>
-    <p class="text-3xl font-bold">24</p>
+    <h2>Total Patients</h2>
+    <p id="totalPatients" class="text-3xl font-bold">0</p>
   </div>
 
   <div class="glass p-5 rounded-xl">
-    <h2 class="text-lg">Appointments Today</h2>
-    <p class="text-3xl font-bold">12</p>
+    <h2>Appointments Today</h2>
+    <p id="appointments" class="text-3xl font-bold">0</p>
   </div>
 
   <div class="glass p-5 rounded-xl">
-    <h2 class="text-lg">Waiting Queue</h2>
-    <p class="text-3xl font-bold">5</p>
+    <h2>Waiting Queue</h2>
+    <p id="waitingCount" class="text-3xl font-bold">0</p>
   </div>
-
 </div>
 
-<!-- Patient Queue -->
-<div class="glass p-6 rounded-xl">
-  <h2 class="text-xl font-semibold mb-4">Live Patient Queue</h2>
+<!-- 📊 Chart -->
+<div class="glass p-6 rounded-xl mb-6">
+  <h2 class="mb-4">Patient Load</h2>
+  <canvas id="chart"></canvas>
+</div>
 
-  <table class="w-full text-left">
+<!-- 🧠 Suggestion -->
+<div class="glass p-4 rounded-xl mb-6">
+  <h2 class="font-semibold mb-2">AI Suggestion</h2>
+  <p id="suggestion">Analyzing...</p>
+</div>
+
+<!-- Queue -->
+<div class="glass p-6 rounded-xl">
+  <h2 class="mb-4">Live Queue</h2>
+
+  <table class="w-full">
     <thead>
-      <tr class="border-b border-white/30">
-        <th class="py-2">Name</th>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
         <th>Issue</th>
         <th>Status</th>
-        <th>Action</th>
       </tr>
     </thead>
-
-    <tbody>
-
-      <tr class="border-b border-white/20">
-        <td class="py-2">Ravi Kumar</td>
-        <td>Fever</td>
-        <td><span class="waiting px-2 py-1 rounded text-black">Waiting</span></td>
-        <td>
-          <button class="bg-blue-500 px-3 py-1 rounded">Start</button>
-        </td>
-      </tr>
-
-      <tr class="border-b border-white/20">
-        <td class="py-2">Anjali</td>
-        <td>Headache</td>
-        <td><span class="progress px-2 py-1 rounded">In Progress</span></td>
-        <td>
-          <button class="bg-green-500 px-3 py-1 rounded">Finish</button>
-        </td>
-      </tr>
-
-      <tr>
-        <td class="py-2">Rahul</td>
-        <td>Checkup</td>
-        <td><span class="done px-2 py-1 rounded">Done</span></td>
-        <td>-</td>
-      </tr>
-
-    </tbody>
+    <tbody id="queueTable"></tbody>
   </table>
 </div>
 
 <script>
 // Role protection
-const role = localStorage.getItem("role");
-if (role !== "doctor") {
-  alert("Access denied");
+if (localStorage.getItem("role") !== "doctor") {
   window.location.href = "index.html";
 }
 
-// Welcome message
+// Welcome
 document.getElementById("welcome").innerText =
   "Dr. " + localStorage.getItem("username");
+
+// Dummy real-time queue (simulate backend)
+let queue = [
+  {name:"Ravi", issue:"Fever", status:"waiting"},
+  {name:"Anjali", issue:"Cold", status:"progress"}
+];
+
+// Render Queue
+function renderQueue() {
+  const table = document.getElementById("queueTable");
+  table.innerHTML = "";
+
+  queue.forEach((p, i) => {
+    table.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${p.name}</td>
+        <td>${p.issue}</td>
+        <td><span class="${p.status} px-2 py-1 rounded">${p.status}</span></td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("totalPatients").innerText = queue.length;
+  document.getElementById("appointments").innerText = queue.length;
+  document.getElementById("waitingCount").innerText =
+    queue.filter(p => p.status==="waiting").length;
+}
+
+// 🔔 Notification
+function showNotification() {
+  const n = document.getElementById("notification");
+  n.classList.remove("hidden");
+  setTimeout(()=>n.classList.add("hidden"), 2000);
+}
+
+// Simulate real-time update
+setInterval(()=>{
+  const names = ["Kiran","Sneha","Rahul"];
+  const issues = ["Checkup","Fever","Headache"];
+
+  queue.push({
+    name: names[Math.floor(Math.random()*3)],
+    issue: issues[Math.floor(Math.random()*3)],
+    status: "waiting"
+  });
+
+  showNotification();
+  renderQueue();
+}, 8000);
+
+// 📊 Chart
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['9AM','10AM','11AM','12PM','1PM'],
+    datasets: [{
+      label: 'Patients',
+      data: [2,5,8,6,10],
+      borderWidth: 2
+    }]
+  }
+});
+
+// 🧠 AI Suggestion
+function updateSuggestion() {
+  const waiting = queue.filter(p => p.status==="waiting").length;
+
+  if (waiting > 5) {
+    document.getElementById("suggestion").innerText =
+      "High load! Consider speeding consultations.";
+  } else {
+    document.getElementById("suggestion").innerText =
+      "Normal flow. You’re on track.";
+  }
+}
+
+setInterval(updateSuggestion, 3000);
 
 // Logout
 function logout() {
   localStorage.clear();
   window.location.href = "index.html";
 }
+
+// Init
+renderQueue();
 </script>
 
 </body>
