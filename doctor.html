@@ -3,300 +3,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Doctor Dashboard</title>
-<button onclick="logout()">Logout</button>
+<title>MEDIQ | Doctor Dashboard</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+  background: linear-gradient(to right, #1e3a8a, #4f46e5);
+}
+
+/* Glass card */
+.glass {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Status colors */
+.waiting { background: #facc15; }
+.progress { background: #3b82f6; }
+.done { background: #22c55e; }
+</style>
+
+</head>
+
+<body class="text-white min-h-screen p-6">
+
+<!-- Top Bar -->
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-3xl font-bold">Doctor Dashboard</h1>
+  <div>
+    <span id="welcome" class="mr-4"></span>
+    <button onclick="logout()" class="bg-red-500 px-4 py-2 rounded">Logout</button>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+
+  <div class="glass p-5 rounded-xl">
+    <h2 class="text-lg">Total Patients</h2>
+    <p class="text-3xl font-bold">24</p>
+  </div>
+
+  <div class="glass p-5 rounded-xl">
+    <h2 class="text-lg">Appointments Today</h2>
+    <p class="text-3xl font-bold">12</p>
+  </div>
+
+  <div class="glass p-5 rounded-xl">
+    <h2 class="text-lg">Waiting Queue</h2>
+    <p class="text-3xl font-bold">5</p>
+  </div>
+
+</div>
+
+<!-- Patient Queue -->
+<div class="glass p-6 rounded-xl">
+  <h2 class="text-xl font-semibold mb-4">Live Patient Queue</h2>
+
+  <table class="w-full text-left">
+    <thead>
+      <tr class="border-b border-white/30">
+        <th class="py-2">Name</th>
+        <th>Issue</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <tr class="border-b border-white/20">
+        <td class="py-2">Ravi Kumar</td>
+        <td>Fever</td>
+        <td><span class="waiting px-2 py-1 rounded text-black">Waiting</span></td>
+        <td>
+          <button class="bg-blue-500 px-3 py-1 rounded">Start</button>
+        </td>
+      </tr>
+
+      <tr class="border-b border-white/20">
+        <td class="py-2">Anjali</td>
+        <td>Headache</td>
+        <td><span class="progress px-2 py-1 rounded">In Progress</span></td>
+        <td>
+          <button class="bg-green-500 px-3 py-1 rounded">Finish</button>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="py-2">Rahul</td>
+        <td>Checkup</td>
+        <td><span class="done px-2 py-1 rounded">Done</span></td>
+        <td>-</td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
 
 <script>
+// Role protection
+const role = localStorage.getItem("role");
+if (role !== "doctor") {
+  alert("Access denied");
+  window.location.href = "index.html";
+}
+
+// Welcome message
+document.getElementById("welcome").innerText =
+  "Dr. " + localStorage.getItem("username");
+
+// Logout
 function logout() {
   localStorage.clear();
   window.location.href = "index.html";
 }
-</script>
-<script>
-    const role = localStorage.getItem("role");
-
-    if (role !== "doctor") {
-      alert("Access denied");
-      window.location.href = "index.html";
-    }
-  </script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-</head>
-
-<body class="bg-gray-100">
-
-<div class="flex h-screen">
-
-    <!-- SIDEBAR -->
-    <aside class="w-64 bg-white shadow-lg flex flex-col">
-        <div class="p-6 border-b">
-            <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
-                <i data-lucide="stethoscope"></i> DoctorPanel
-            </h1>
-        </div>
-
-        <nav class="flex-1 p-4 space-y-2">
-            <button onclick="showPage('home',this)" class="nav-btn active">
-                <i data-lucide="layout-dashboard"></i> Dashboard
-            </button>
-            <button onclick="showPage('patients',this)" class="nav-btn">
-                <i data-lucide="users"></i> Patients
-            </button>
-            <button onclick="showPage('bookings',this)" class="nav-btn">
-                <i data-lucide="calendar"></i> Bookings
-            </button>
-            <button onclick="showPage('profile',this)" class="nav-btn">
-                <i data-lucide="user"></i> Profile
-            </button>
-        </nav>
-
-        <div class="p-4 border-t text-sm text-gray-500">
-            Dr. Dashboard v1.0
-        </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="flex-1 p-8 overflow-y-auto">
-
-        <!-- DASHBOARD -->
-        <section id="home">
-            <h2 class="text-2xl font-bold mb-6">Welcome, Doctor 👋</h2>
-<div class="grid md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-2xl p-6 shadow mb-6">
-    <h3 class="font-bold mb-4">Weekly Patient Trend</h3>
-
-    <div id="weekly-chart" class="flex items-end gap-4 h-40"></div>
-</div>
-
-    <div class="card">
-        <p>Total Patients</p>
-        <h3>120</h3>
-    </div>
-
-    <div class="card">
-        <p>Today's Patients</p>
-        <h3 id="todayPatients">8</h3>
-    </div>
-
-    <div class="card">
-        <p>Weekly Patients</p>
-        <h3 id="weeklyPatients">42</h3>
-    </div>
-
-    <div class="card">
-        <p>Available Slots</p>
-        <h3>6</h3>
-    </div>
-
-</div>
-
-            <!-- Recent -->
-            <div class="bg-white rounded-2xl p-6 shadow">
-                <h3 class="font-bold mb-4">Recent Bookings</h3>
-                <div class="bg-white rounded-2xl p-6 shadow mt-6">
-    <h3 class="font-bold mb-4">Busy Hours (Today)</h3>
-
-    <div class="bg-white rounded-2xl p-6 shadow">
-    <h3 class="font-bold mb-4">Busy Hours (Today)</h3>
-
-    <div id="busy-hours" class="flex items-end gap-3 h-40"></div>
-</div>
-</div>
-
-                <div class="space-y-3">
-                    <div class="flex justify-between p-3 bg-gray-50 rounded-lg">
-                        <span>Patient A</span>
-                        <span class="text-blue-600 font-semibold">10:30 AM</span>
-                    </div>
-                    <div class="flex justify-between p-3 bg-gray-50 rounded-lg">
-                        <span>Patient B</span>
-                        <span class="text-blue-600 font-semibold">11:30 AM</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- PATIENTS -->
-        <section id="patients" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Patients</h2>
-
-            <div class="bg-white rounded-2xl shadow overflow-hidden">
-                <table class="w-full">
-                    <thead class="bg-gray-50 text-gray-600 text-sm">
-                        <tr>
-                            <th class="p-4 text-left">Patient</th>
-                            <th class="p-4">Time</th>
-                            <th class="p-4">Status</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr class="border-t hover:bg-gray-50">
-                            <td class="p-4">John Doe</td>
-                            <td class="p-4 text-center">10:30 AM</td>
-                            <td class="p-4 text-center text-green-600">Completed</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- BOOKINGS -->
-        <section id="bookings" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Appointments</h2>
-
-            <div class="grid md:grid-cols-2 gap-6">
-
-                <div class="booking-card">
-                    <p class="font-bold">Patient A</p>
-                    <p class="text-gray-500 text-sm">09:00 AM</p>
-                    <button class="btn-accept">Accept</button>
-                </div>
-
-                <div class="booking-card">
-                    <p class="font-bold">Patient B</p>
-                    <p class="text-gray-500 text-sm">10:30 AM</p>
-                    <button class="btn-accept">Accept</button>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- PROFILE -->
-        <section id="profile" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Profile Settings</h2>
-
-            <div class="bg-white p-6 rounded-2xl shadow space-y-4 max-w-md">
-
-                <input class="input" placeholder="Doctor Name">
-                <input class="input" placeholder="Specialization">
-                <input class="input" placeholder="Consultation Fee">
-
-                <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                    Save Changes
-                </button>
-
-            </div>
-        </section>
-
-    </main>
-</div>
-
-<style>
-.nav-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    color: #555;
-    transition: 0.2s;
-}
-.nav-btn:hover {
-    background: #f1f5f9;
-}
-.nav-btn.active {
-    background: #e0edff;
-    color: #2563eb;
-    font-weight: 600;
-}
-
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-.card h3 {
-    font-size: 24px;
-    font-weight: bold;
-}
-
-.booking-card {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-.btn-accept {
-    margin-top: 10px;
-    background: #2563eb;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 8px;
-}
-
-.input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-}
-</style>
-
-<script>
-function showPage(page, el) {
-    document.querySelectorAll("section").forEach(sec => sec.classList.add("hidden"));
-    document.getElementById(page).classList.remove("hidden");
-
-    document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-    el.classList.add("active");
-}
-function generateStats() {
-
-    // SAMPLE DATA (later from DB)
-    const bookings = [
-        "09:00","09:30","10:00","10:30","10:30",
-        "11:00","12:00","12:00","14:00","15:00","15:00","16:00"
-    ];
-
-    // TODAY
-    document.getElementById("todayPatients").innerText = bookings.length;
-
-    // WEEK DATA (dummy)
-    const weeklyData = [5, 8, 6, 10, 12, 9, 7]; // Mon-Sun
-    document.getElementById("weeklyPatients").innerText =
-        weeklyData.reduce((a,b)=>a+b,0);
-
-    // WEEKLY CHART
-    const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-    const weeklyContainer = document.getElementById("weekly-chart");
-
-    weeklyContainer.innerHTML = weeklyData.map((val, i) => `
-        <div class="flex flex-col items-center flex-1">
-            <div class="bg-blue-600 w-full rounded-t"
-                 style="height:${val * 10}px"></div>
-            <span class="text-xs mt-2">${days[i]}</span>
-        </div>
-    `).join('');
-    
-    // BUSY HOURS
-    const hourMap = {};
-
-    bookings.forEach(time => {
-        const hour = time.split(":")[0];
-        hourMap[hour] = (hourMap[hour] || 0) + 1;
-    });
-
-    const busyContainer = document.getElementById("busy-hours");
-
-    busyContainer.innerHTML = Object.keys(hourMap).map(hour => {
-        const count = hourMap[hour];
-
-        return `
-            <div class="flex flex-col items-center flex-1">
-                <div class="bg-green-500 w-full rounded-t"
-                     style="height:${count * 20}px"></div>
-                <span class="text-xs mt-2">${hour}</span>
-            </div>
-        `;
-    }).join('');
-}
-lucide.createIcons();
-generateStats();
 </script>
 
 </body>
