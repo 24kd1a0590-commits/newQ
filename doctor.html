@@ -10,81 +10,112 @@
 
 <style>
 body {
-  background: linear-gradient(to right, #1e3a8a, #4f46e5);
+  background: #0f172a;
 }
+
+/* Glass */
 .glass {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
 }
-.waiting { background: #facc15; }
-.progress { background: #3b82f6; }
-.done { background: #22c55e; }
+
+/* Tabs */
+.tab {
+  cursor: pointer;
+}
+.active-tab {
+  background: #4f46e5;
+}
 </style>
 
 </head>
 
-<body class="text-white min-h-screen p-6">
+<body class="text-white min-h-screen">
 
-<!-- 🔔 Notification -->
-<div id="notification" class="fixed top-5 right-5 bg-green-500 px-4 py-2 rounded hidden">
-  New patient added!
-</div>
-
-<!-- Top Bar -->
-<div class="flex justify-between items-center mb-6">
-  <h1 class="text-3xl font-bold">Doctor Dashboard</h1>
+<!-- 🔝 Navbar -->
+<div class="flex justify-between items-center px-6 py-4 bg-gray-900 shadow">
+  <h1 class="text-2xl font-bold text-indigo-400">MEDIQ Doctor Panel</h1>
   <div>
     <span id="welcome" class="mr-4"></span>
     <button onclick="logout()" class="bg-red-500 px-4 py-2 rounded">Logout</button>
   </div>
 </div>
 
-<!-- Stats -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-  <div class="glass p-5 rounded-xl">
-    <h2>Total Patients</h2>
-    <p id="totalPatients" class="text-3xl font-bold">0</p>
+<!-- 🔷 Tabs -->
+<div class="flex gap-4 p-4 bg-gray-800">
+  <div class="tab active-tab px-4 py-2 rounded" onclick="showTab('dashboard')">Dashboard</div>
+  <div class="tab px-4 py-2 rounded bg-gray-700" onclick="showTab('queue')">Queue</div>
+  <div class="tab px-4 py-2 rounded bg-gray-700" onclick="showTab('analytics')">Analytics</div>
+  <div class="tab px-4 py-2 rounded bg-gray-700" onclick="showTab('ai')">AI Insights</div>
+</div>
+
+<!-- 📊 DASHBOARD -->
+<div id="dashboard" class="p-6">
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <div class="glass p-5 rounded-xl bg-blue-500/20">
+      <h2>Total Patients</h2>
+      <p id="totalPatients" class="text-3xl font-bold">0</p>
+    </div>
+
+    <div class="glass p-5 rounded-xl bg-green-500/20">
+      <h2>Appointments</h2>
+      <p id="appointments" class="text-3xl font-bold">0</p>
+    </div>
+
+    <div class="glass p-5 rounded-xl bg-yellow-500/20">
+      <h2>Waiting</h2>
+      <p id="waitingCount" class="text-3xl font-bold">0</p>
+    </div>
+
   </div>
 
-  <div class="glass p-5 rounded-xl">
-    <h2>Appointments Today</h2>
-    <p id="appointments" class="text-3xl font-bold">0</p>
+</div>
+
+<!-- 📋 QUEUE -->
+<div id="queue" class="p-6 hidden">
+
+  <div class="glass p-6 rounded-xl">
+    <h2 class="mb-4 text-xl">Live Queue</h2>
+
+    <table class="w-full">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Issue</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody id="queueTable"></tbody>
+    </table>
+
   </div>
 
-  <div class="glass p-5 rounded-xl">
-    <h2>Waiting Queue</h2>
-    <p id="waitingCount" class="text-3xl font-bold">0</p>
+</div>
+
+<!-- 📊 ANALYTICS -->
+<div id="analytics" class="p-6 hidden">
+  <div class="glass p-6 rounded-xl">
+    <h2 class="mb-4">Patient Load</h2>
+    <canvas id="chart"></canvas>
   </div>
 </div>
 
-<!-- 📊 Chart -->
-<div class="glass p-6 rounded-xl mb-6">
-  <h2 class="mb-4">Patient Load</h2>
-  <canvas id="chart"></canvas>
+<!-- 🧠 AI -->
+<div id="ai" class="p-6 hidden">
+  <div class="glass p-6 rounded-xl bg-purple-500/20">
+    <h2 class="mb-4">AI Suggestions</h2>
+    <p id="suggestion">Analyzing...</p>
+  </div>
 </div>
 
-<!-- 🧠 Suggestion -->
-<div class="glass p-4 rounded-xl mb-6">
-  <h2 class="font-semibold mb-2">AI Suggestion</h2>
-  <p id="suggestion">Analyzing...</p>
-</div>
-
-<!-- Queue -->
-<div class="glass p-6 rounded-xl">
-  <h2 class="mb-4">Live Queue</h2>
-
-  <table class="w-full">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Issue</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="queueTable"></tbody>
-  </table>
+<!-- 🔔 Notification -->
+<div id="notification" class="fixed top-5 right-5 bg-green-500 px-4 py-2 rounded hidden">
+  New patient added!
 </div>
 
 <script>
@@ -97,10 +128,21 @@ if (localStorage.getItem("role") !== "doctor") {
 document.getElementById("welcome").innerText =
   "Dr. " + localStorage.getItem("username");
 
-// Dummy real-time queue (simulate backend)
+// Tabs
+function showTab(tab) {
+  document.querySelectorAll("#dashboard,#queue,#analytics,#ai")
+    .forEach(el => el.classList.add("hidden"));
+
+  document.getElementById(tab).classList.remove("hidden");
+
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active-tab"));
+  event.target.classList.add("active-tab");
+}
+
+// Queue data
 let queue = [
-  {name:"Ravi", issue:"Fever", status:"waiting"},
-  {name:"Anjali", issue:"Cold", status:"progress"}
+  {name:"Ravi", issue:"Fever", status:"Waiting"},
+  {name:"Anjali", issue:"Cold", status:"In Progress"}
 ];
 
 // Render Queue
@@ -114,7 +156,7 @@ function renderQueue() {
         <td>${i+1}</td>
         <td>${p.name}</td>
         <td>${p.issue}</td>
-        <td><span class="${p.status} px-2 py-1 rounded">${p.status}</span></td>
+        <td>${p.status}</td>
       </tr>
     `;
   });
@@ -122,17 +164,17 @@ function renderQueue() {
   document.getElementById("totalPatients").innerText = queue.length;
   document.getElementById("appointments").innerText = queue.length;
   document.getElementById("waitingCount").innerText =
-    queue.filter(p => p.status==="waiting").length;
+    queue.filter(p => p.status==="Waiting").length;
 }
 
-// 🔔 Notification
-function showNotification() {
+// Notification
+function notify() {
   const n = document.getElementById("notification");
   n.classList.remove("hidden");
-  setTimeout(()=>n.classList.add("hidden"), 2000);
+  setTimeout(()=>n.classList.add("hidden"),2000);
 }
 
-// Simulate real-time update
+// Simulate updates
 setInterval(()=>{
   const names = ["Kiran","Sneha","Rahul"];
   const issues = ["Checkup","Fever","Headache"];
@@ -140,42 +182,34 @@ setInterval(()=>{
   queue.push({
     name: names[Math.floor(Math.random()*3)],
     issue: issues[Math.floor(Math.random()*3)],
-    status: "waiting"
+    status: "Waiting"
   });
 
-  showNotification();
+  notify();
   renderQueue();
 }, 8000);
 
-// 📊 Chart
-const ctx = document.getElementById('chart');
-
-new Chart(ctx, {
-  type: 'line',
+// Chart
+new Chart(document.getElementById("chart"), {
+  type: 'bar',
   data: {
     labels: ['9AM','10AM','11AM','12PM','1PM'],
     datasets: [{
       label: 'Patients',
-      data: [2,5,8,6,10],
-      borderWidth: 2
+      data: [2,5,8,6,10]
     }]
   }
 });
 
-// 🧠 AI Suggestion
-function updateSuggestion() {
-  const waiting = queue.filter(p => p.status==="waiting").length;
+// AI Suggestion
+setInterval(()=>{
+  const waiting = queue.filter(p => p.status==="Waiting").length;
 
-  if (waiting > 5) {
-    document.getElementById("suggestion").innerText =
-      "High load! Consider speeding consultations.";
-  } else {
-    document.getElementById("suggestion").innerText =
-      "Normal flow. You’re on track.";
-  }
-}
-
-setInterval(updateSuggestion, 3000);
+  document.getElementById("suggestion").innerText =
+    waiting > 5
+    ? "⚠ High load! Speed up consultations."
+    : "✅ Smooth workflow.";
+}, 3000);
 
 // Logout
 function logout() {
