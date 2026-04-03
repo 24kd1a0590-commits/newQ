@@ -1,20 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEDIQ | Login</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+  background: url('https://blog.voagents.ai/wp-content/uploads/2025/09/ai-medical-scheduling.png') no-repeat center center/cover;
+}
+</style>
+
 </head>
-<body>
 
-<h2>Login</h2>
+<body class="min-h-screen flex items-center justify-center">
 
-<input type="text" id="username" placeholder="Enter name"><br><br>
+<!-- Dark overlay -->
+<div class="absolute inset-0 bg-black/60"></div>
 
-<select id="role">
-  <option value="patient">Patient</option>
-  <option value="doctor">Doctor</option>
-</select><br><br>
+<!-- Login Card -->
+<div class="relative w-96 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 text-white">
 
-<button onclick="login()">Login</button>
+    <!-- Logo -->
+    <h1 class="text-4xl font-extrabold text-center mb-1">MEDIQ</h1>
+    <p class="text-center text-gray-200 mb-6">AI Powered Healthcare Platform</p>
+
+    <!-- Feature Highlights -->
+    <div class="bg-white/10 border border-white/20 rounded-lg p-3 mb-5 text-sm text-gray-200">
+        🚀 Fast Appointment Booking <br>
+        ⏱ Reduced Waiting Time <br>
+        🤖 Smart Doctor Matching
+    </div>
+
+    <!-- Username -->
+    <div class="mb-4">
+        <label class="text-sm">Full Name</label>
+        <input 
+            type="text" 
+            id="username" 
+            placeholder="Enter your name"
+            class="w-full px-4 py-2 mt-1 bg-white/20 border border-white/30 rounded-lg placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+    </div>
+
+    <!-- Role -->
+    <div class="mb-6">
+        <label class="text-sm">Select Role</label>
+        <select 
+            id="role"
+            class="w-full px-4 py-2 mt-1 bg-white/20 border border-white/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+            <option value="patient" class="text-black">Patient</option>
+            <option value="doctor" class="text-black">Doctor</option>
+        </select>
+    </div>
+
+    <!-- Button -->
+    <button 
+        onclick="login()"
+        class="w-full bg-blue-500 hover:bg-blue-600 transition duration-300 py-2 rounded-lg font-semibold shadow-lg"
+    >
+        Enter MEDIQ →
+    </button>
+
+    <!-- Footer -->
+    <p class="text-xs text-center text-gray-300 mt-4">
+        Secure • Smart • Reliable
+    </p>
+
+</div>
 
 <script>
 function login() {
@@ -26,11 +82,9 @@ function login() {
     return;
   }
 
-  // store data
   localStorage.setItem("username", name);
   localStorage.setItem("role", role);
 
-  // redirect
   if (role === "doctor") {
     window.location.href = "doctor.html";
   } else {
