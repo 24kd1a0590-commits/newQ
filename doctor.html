@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Doctor Dashboard</title>
+<button onclick="logout()">Logout</button>
+
+<script>
+function logout() {
+  localStorage.clear();
+  window.location.href = "index.html";
+}
+</script>
+<script>
+    const role = localStorage.getItem("role");
+
+    if (role !== "doctor") {
+      alert("Access denied");
+      window.location.href = "index.html";
+    }
+  </script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -21,16 +37,16 @@
         </div>
 
         <nav class="flex-1 p-4 space-y-2">
-            <button onclick="showPage('home')" class="nav-btn active">
+            <button onclick="showPage('home',this)" class="nav-btn active">
                 <i data-lucide="layout-dashboard"></i> Dashboard
             </button>
-            <button onclick="showPage('patients')" class="nav-btn">
+            <button onclick="showPage('patients',this)" class="nav-btn">
                 <i data-lucide="users"></i> Patients
             </button>
-            <button onclick="showPage('bookings')" class="nav-btn">
+            <button onclick="showPage('bookings',this)" class="nav-btn">
                 <i data-lucide="calendar"></i> Bookings
             </button>
-            <button onclick="showPage('profile')" class="nav-btn">
+            <button onclick="showPage('profile',this)" class="nav-btn">
                 <i data-lucide="user"></i> Profile
             </button>
         </nav>
@@ -222,12 +238,12 @@
 </style>
 
 <script>
-function showPage(page) {
+function showPage(page, el) {
     document.querySelectorAll("section").forEach(sec => sec.classList.add("hidden"));
     document.getElementById(page).classList.remove("hidden");
 
     document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-    event.target.classList.add("active");
+    el.classList.add("active");
 }
 function generateStats() {
 
