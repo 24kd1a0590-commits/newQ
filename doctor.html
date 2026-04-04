@@ -7,6 +7,7 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body {
@@ -142,6 +143,10 @@ body {
 </div>
 
 <script>
+  const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+const doctorId = localStorage.getItem("doctor_id");
 // Role check
 if (localStorage.getItem("role") !== "doctor") {
   window.location.href = "index.html";
@@ -162,11 +167,28 @@ function showTab(tab, e) {
   e.target.classList.add("active-tab");
 }
 
-// Queue
-let queue = [
-  {name:"Ravi", issue:"Fever", status:"Waiting"},
-  {name:"Anjali", issue:"Cold", status:"In Progress"}
-];
+async function loadQueue() {
+  const { data, error } = await supabaseClient
+    .from('bookings')
+    .select('*')
+    .eq('doctor_id', doctorId)   // ✅ ONLY THIS DOCTOR
+    .order('id', { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  queue = data.map(b => ({
+    name: b.patient_name || "Patient",
+    issue: "General",
+    status: b.status === "waiting" ? "Waiting" :
+            b.status === "in_consultation" ? "In Progress" : "Done",
+    id: b.id
+  }));
+
+  renderQueue();
+}
 
 // Render Queue
 function renderQueue() {
@@ -200,13 +222,35 @@ function renderQueue() {
 }
 
 // Actions
-function startPatient(i){
-  queue[i].status="In Progress";
-  renderQueue();
+async function startPatient(i){
+  const patient = queue[i];
+
+  const { error } = await supabaseClient
+    .from('bookings')
+    .update({ status: 'in_consultation' })
+    .eq('id', patient.id);
+
+  if (error) {
+    alert("Error updating status");
+    return;
+  }
+
+  loadQueue(); // refresh
 }
-function finishPatient(i){
-  queue[i].status="Done";
-  renderQueue();
+async function finishPatient(i){
+  const patient = queue[i];
+
+  const { error } = await supabaseClient
+    .from('bookings')
+    .update({ status: 'completed' })
+    .eq('id', patient.id);
+
+  if (error) {
+    alert("Error updating status");
+    return;
+  }
+
+  loadQueue(); // refresh
 }
 
 // Notification
@@ -216,20 +260,7 @@ function notify(){
   setTimeout(()=>n.classList.add("hidden"),2000);
 }
 
-// Simulate real-time
-setInterval(()=>{
-  const names=["Kiran","Sneha","Rahul"];
-  const issues=["Checkup","Fever","Headache"];
 
-  queue.push({
-    name:names[Math.floor(Math.random()*3)],
-    issue:issues[Math.floor(Math.random()*3)],
-    status:"Waiting"
-  });
-
-  notify();
-  renderQueue();
-},8000);
 
 // Chart
 new Chart(document.getElementById("chart"), {
@@ -252,9 +283,23 @@ function logout(){
   localStorage.clear();
   window.location.href="index.html";
 }
+supabaseClient
+  .channel('doctor-queue')
+  .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'bookings'
+  }, payload => {
 
-// Init
-renderQueue();
+      if (payload.new.doctor_id == doctorId) {
+          notify();        // 🔔 show alert
+          loadQueue();     // refresh queue
+      }
+
+  })
+  .subscribe();
+
+loadQueue();
 </script>
 
 </body>

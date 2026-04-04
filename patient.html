@@ -403,6 +403,7 @@ async function confirmBooking() {
     const { error } = await supabaseClient
         .from('bookings')
         .insert([{
+            doctor_id: selectedDoctor.id,
             doctor_name: selectedDoctor.name,
             date: "Today",
             time: selectedTime,

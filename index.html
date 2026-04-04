@@ -7,6 +7,7 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 
+
 <style>
 /* Background Image */
 body {
@@ -117,22 +118,23 @@ function login() {
   localStorage.setItem("username", name);
   localStorage.setItem("role", role);
 
+  // ✅ ADD THIS BLOCK
   if (role === "doctor") {
+
+    // Map doctor name → doctor_id (must match Supabase)
+    let doctorId;
+
+    if (name.toLowerCase().includes("aarav")) doctorId = 1;
+    else if (name.toLowerCase().includes("priya")) doctorId = 2;
+    else if (name.toLowerCase().includes("rahul")) doctorId = 3;
+    else doctorId = 1; // default
+
+    localStorage.setItem("doctor_id", doctorId);  // 🔥 IMPORTANT
+
     window.location.href = "doctor.html";
+
   } else {
     window.location.href = "patient.html";
-  }
-}
-
-// Typing animation
-const text = "AI Powered Smart Healthcare System";
-let i = 0;
-
-function typeEffect() {
-  if (i < text.length) {
-    document.getElementById("typing").innerHTML += text.charAt(i);
-    i++;
-    setTimeout(typeEffect, 40);
   }
 }
 
