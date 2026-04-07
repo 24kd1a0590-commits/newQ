@@ -447,11 +447,14 @@ function closeBooking() {
     selectedDoctor = null;
     selectedTime = null;
 }
-
 async function renderBookings() {
+
+    const patientName = localStorage.getItem("username") || "Patient";
+
     const { data, error } = await supabaseClient
         .from('bookings')
         .select('*')
+        .eq('patient_name', patientName)
         .order('id', { ascending: false });
 
     if (error) {
@@ -461,31 +464,60 @@ async function renderBookings() {
 
     const list = document.getElementById('bookings-list');
 
-    list.innerHTML = data.map(b => `
-    <div class="glass p-4 rounded-xl border flex justify-between">
-        <div>
-            <p class="font-bold">${b.doctor_name}</p>
-            <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
+    const waits = await Promise.all(data.map(b => calculateWait(b)));
 
-            <p class="text-xs text-blue-600 mt-1">
-                ⏳ Live Wait: ${calculateWait(b)} mins
-            </p>
+    list.innerHTML = data.map((b, i) => {
+
+        const wait = waits[i];
+
+        // ⏰ Recommended arrival time
+        const reachTime = wait <= 10 ? "Reach Now"
+            : `Reach in ${wait - 10} mins`;
+
+        return `
+        <div class="glass p-4 rounded-xl border flex justify-between">
+            <div>
+                <p class="font-bold">${b.doctor_name}</p>
+                <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
+
+                <p class="text-xs text-white">
+                    Queue No: ${b.queue_number}
+                </p>
+
+                <p class="text-xs text-blue-400 mt-1">
+                    ⏳ Wait Time: ${wait} mins
+                </p>
+
+                <p class="text-xs text-green-400">
+                    📍 ${reachTime}
+                </p>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs font-bold
+                ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' :
+                  b.status === 'in_consultation' ? 'bg-green-100 text-green-600' :
+                  'bg-gray-200 text-gray-300'}">
+                ${b.status}
+            </span>
         </div>
-
-        <span class="px-3 py-1 rounded-full text-xs font-bold
-            ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' :
-              b.status === 'in_consultation' ? 'bg-green-100 text-green-600' :
-              'bg-gray-200 text-gray-300'}">
-            ${b.status}
-        </span>
-    </div>
-`).join('');
+        `;
+    }).join('');
 
     lucide.createIcons();
 }
-function calculateWait(booking){
-  const ahead = doctors.filter(d => d.queue_number < booking.queue_number);
-  return ahead.length * 10; // simple for now
+async function calculateWait(booking){
+
+  // get patients ahead of you
+  const { data: ahead } = await supabaseClient
+    .from('bookings')
+    .select('*')
+    .eq('doctor_id', booking.doctor_id)
+    .lt('queue_number', booking.queue_number)
+    .in('status', ['waiting','in_consultation']);
+
+  const avgTime = 10; // 10 mins per patient
+
+  return ahead.length * avgTime;
 }
 supabaseClient
     .channel('realtime-bookings')

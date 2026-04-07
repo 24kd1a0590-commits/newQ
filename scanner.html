@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="background:black;color:white;text-align:center">
+
+<h2>Scan Patient QR</h2>
+<div id="reader" style="width:300px;margin:auto;"></div>
+
+<script>
+const supabase = window.supabase.createClient(
+  'https://gxuwfjlwcgnjnwegzamd.supabase.co',
+  'YOUR_KEY'
+);
+
+function onScanSuccess(decodedText) {
+    handleScan(decodedText);
+}
+
+const qr = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+qr.render(onScanSuccess);
+
+async function handleScan(code){
+  console.log("Scanned:", code);
+
+  // find booking
+  const { data } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('qr_code', code)
+    .single();
+
+  if(!data){
+    alert("Invalid QR");
+    return;
+  }
+
+  // 🔥 ENTRY SCAN
+  if(data.status === "waiting"){
+    await supabase
+      .from('bookings')
+      .update({
+        status: "in_consultation",
+        started_at: new Date()
+      })
+      .eq('id', data.id);
+
+    alert("Treatment Started");
+  }
+
+  // 🔥 EXIT SCAN
+  else if(data.status === "in_consultation"){
+    const end = new Date();
+    const start = new Date(data.started_at);
+    const duration = Math.floor((end - start)/60000);
+
+    await supabase
+      .from('bookings')
+      .update({
+        status: "completed",
+        ended_at: end,
+        actual_time: duration
+      })
+      .eq('id', data.id);
+
+    alert("Treatment Completed");
+  }
+}
+</script>
+
+</body>
+</html>
