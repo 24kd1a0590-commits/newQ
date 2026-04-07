@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HealthBook | Patient Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script>
 function logout() {
   localStorage.clear();
@@ -196,6 +197,7 @@ class="cursor-pointer text-center hover:bg-white/10 p-2 rounded-lg">
                             <button onclick="confirmBooking()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition transform active:scale-95 shadow-lg shadow-blue-200">
                                 Confirm Booking
                             </button>
+                            <canvas id="qrCanvas" class="mt-4"></canvas>
                             <button onclick="closeBooking()" class="w-full mt-3 text-gray-400 py-2 font-medium hover:text-red-500 transition">
                                 Cancel
                             </button>
@@ -392,25 +394,40 @@ function selectTime(time, el) {
 async function confirmBooking() {
     if (!selectedTime) return alert("Please select a time slot first!");
 
-    // STEP 1: get existing bookings count
-    const { data: existing } = await supabaseClient
-        .from('bookings')
-        .select('*');
+    const patientName = localStorage.getItem("username") || "Patient";
 
-    const queueNumber = existing.length + 1;
+    // ✅ Get bookings ONLY for this doctor
+   const { data: existing } = await supabaseClient
+  .from('bookings')
+  .select('*')
+  .eq('doctor_id', selectedDoctor.id)
+  .in('status', ['waiting','in_consultation']);
+const queueNumber = existing.length + 1;
 
-    // STEP 2: insert booking with queue + status
     const { error } = await supabaseClient
         .from('bookings')
         .insert([{
             doctor_id: selectedDoctor.id,
             doctor_name: selectedDoctor.name,
+            patient_name: patientName,   // ✅ IMPORTANT
             date: "Today",
             time: selectedTime,
             status: "waiting",
             queue_number: queueNumber,
-            estimated_wait: 0
+            estimated_wait: queueNumber * 10  // optional logic
         }]);
+        const bookingId = Math.random().toString(36).substring(2,9);
+
+// save QR ID
+await supabaseClient
+  .from('bookings')
+  .update({ qr_code: bookingId })
+  .eq('doctor_id', selectedDoctor.id)
+  .eq('patient_name', patientName)
+  .eq('time', selectedTime);
+
+// generate QR
+QRCode.toCanvas(document.getElementById('qrCanvas'), bookingId);
 
     if (error) {
         alert("Error saving booking");
@@ -451,7 +468,7 @@ async function renderBookings() {
             <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
 
             <p class="text-xs text-blue-600 mt-1">
-                ⏳ Waiting Time: ${b.estimated_wait || 0} mins
+                ⏳ Live Wait: ${calculateWait(b)} mins
             </p>
         </div>
 
@@ -465,6 +482,10 @@ async function renderBookings() {
 `).join('');
 
     lucide.createIcons();
+}
+function calculateWait(booking){
+  const ahead = doctors.filter(d => d.queue_number < booking.queue_number);
+  return ahead.length * 10; // simple for now
 }
 supabaseClient
     .channel('realtime-bookings')

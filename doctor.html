@@ -146,7 +146,7 @@ body {
   const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-const doctorId = localStorage.getItem("doctor_id");
+const doctorId = Number(localStorage.getItem("doctor_id"));
 // Role check
 if (localStorage.getItem("role") !== "doctor") {
   window.location.href = "index.html";
@@ -172,8 +172,7 @@ async function loadQueue() {
     .from('bookings')
     .select('*')
     .eq('doctor_id', doctorId)   // ✅ ONLY THIS DOCTOR
-    .order('id', { ascending: true });
-
+    .order('queue_number', { ascending: true });
   if (error) {
     console.error(error);
     return;
@@ -186,6 +185,8 @@ async function loadQueue() {
             b.status === "in_consultation" ? "In Progress" : "Done",
     id: b.id
   }));
+  console.log("Doctor ID:", doctorId);
+console.log("Bookings:", data);
 
   renderQueue();
 }
@@ -227,30 +228,39 @@ async function startPatient(i){
 
   const { error } = await supabaseClient
     .from('bookings')
-    .update({ status: 'in_consultation' })
+    .update({ 
+        status: 'in_consultation',
+        started_at: new Date()
+    })
     .eq('id', patient.id);
 
-  if (error) {
-    alert("Error updating status");
-    return;
-  }
-
-  loadQueue(); // refresh
+  loadQueue();
 }
 async function finishPatient(i){
   const patient = queue[i];
 
-  const { error } = await supabaseClient
+  const endTime = new Date();
+
+  // get start time
+  const { data } = await supabaseClient
     .from('bookings')
-    .update({ status: 'completed' })
+    .select('started_at')
+    .eq('id', patient.id)
+    .single();
+
+  const start = new Date(data.started_at);
+  const duration = Math.floor((endTime - start) / 60000);
+
+  await supabaseClient
+    .from('bookings')
+    .update({ 
+        status: 'completed',
+        ended_at: endTime,
+        actual_time: duration
+    })
     .eq('id', patient.id);
 
-  if (error) {
-    alert("Error updating status");
-    return;
-  }
-
-  loadQueue(); // refresh
+  loadQueue();
 }
 
 // Notification
@@ -291,7 +301,7 @@ supabaseClient
       table: 'bookings'
   }, payload => {
 
-      if (payload.new.doctor_id == doctorId) {
+      if (Number(payload.new.doctor_id) == doctorId) {
           notify();        // 🔔 show alert
           loadQueue();     // refresh queue
       }
