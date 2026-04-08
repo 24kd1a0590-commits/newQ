@@ -75,6 +75,10 @@ body {
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="glass p-5 rounded-xl">
+  <h2 class="mb-4 font-semibold">Patient Status</h2>
+  <canvas id="statusChart" style="max-height:220px;"></canvas>
+</div>
 
     <div class="glass p-5 rounded-xl">
       <h2 class="mb-4 font-semibold">Today's Schedule</h2>
@@ -139,17 +143,17 @@ body {
 <div id="ai" class="p-6 hidden">
   <div class="grid md:grid-cols-2 gap-6">
 
-    <!-- Pie Chart -->
-    <div class="glass p-6 rounded-xl">
-      <h2 class="mb-4">Patient Status</h2>
-      <canvas id="statusChart" style="max-height:250px;"></canvas>
-    </div>
+    
 
     <!-- Bar Chart -->
     <div class="glass p-6 rounded-xl">
       <h2 class="mb-4">Consultation Time</h2>
        <canvas id="timeChart" style="max-height:250px;"></canvas>
     </div>
+    <div class="glass p-4 rounded-xl h-[300px] md:col-span-2">
+  <h2 class="mb-4">Doctor Performance</h2>
+  <canvas id="performanceChart"></canvas>
+</div>
 
     <!-- AI Suggestion -->
     <div class="glass p-6 rounded-xl bg-purple-500/20 md:col-span-2">
@@ -183,8 +187,39 @@ function showTab(tab, e) {
 
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active-tab"));
   e.target.classList.add("active-tab");
-}
 
+  // ✅ Load data for charts
+  loadQueue();
+}
+let performanceChart;
+
+function updatePerformanceChart(data){
+
+  let completed = data.filter(d=>d.status==="completed");
+
+  let totalPatients = completed.length;
+
+  let avgTime = completed.length
+    ? Math.round(completed.reduce((a,b)=>a+b.actual_time,0)/completed.length)
+    : 0;
+
+  if(performanceChart) performanceChart.destroy();
+
+  performanceChart = new Chart(document.getElementById("performanceChart"), {
+    type: 'bar',
+    data: {
+      labels: ['Patients Handled','Avg Time (mins)'],
+      datasets: [{
+        label: 'Performance',
+        data: [totalPatients, avgTime]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
 async function loadQueue() {
   const { data, error } = await supabaseClient
     .from('bookings')
@@ -207,6 +242,7 @@ async function loadQueue() {
 console.log("Bookings:", data);
 updateAICharts(data);
 updateAISuggestions(data);
+updatePerformanceChart(data);
   renderQueue();
 }
 
@@ -287,22 +323,39 @@ function updateAICharts(data){
 }
 function updateAISuggestions(data){
   let waiting = data.filter(d=>d.status==="waiting").length;
+  let completed = data.filter(d=>d.status==="completed");
+  let avgTime = completed.length
+    ? completed.reduce((a,b)=>a+b.actual_time,0)/completed.length
+    : 0;
 
-  let avgTime = data
-    .filter(d=>d.actual_time)
-    .reduce((a,b)=>a+b.actual_time,0) / (data.length || 1);
-
+  let hour = new Date().getHours();
   let msg = "";
 
-  if(waiting > 5){
-    msg = "⚠ High patient load";
-  } else if(avgTime > 20){
-    msg = "⏱ Consultations taking longer";
-  } else {
-    msg = "✅ Smooth workflow";
+  // 🔴 Overload Alerts
+  if(waiting > 8){
+    msg += "⚠ Too many waiting patients. ";
   }
 
-  document.getElementById("suggestion").innerText = msg;
+  if(hour >= 10 && hour <= 12){
+    msg += "⏰ Rush Hour (10–12 PM). ";
+  }
+
+  if(avgTime > 20){
+    msg += "⏱ Delay risk high. ";
+  }
+
+  // 🧠 Smart Suggestions
+  if(waiting > 5 && avgTime > 15){
+    msg += "👉 Suggestion: Speed up consultations.";
+  }
+  else if(waiting < 3){
+    msg += "👉 Suggestion: Take a short break.";
+  }
+  else{
+    msg += "👉 System running efficiently.";
+  }
+document.getElementById("suggestion").innerText =
+  msg || "✅ System running smoothly";
 }
 // Actions
 async function startPatient(i){
@@ -364,12 +417,6 @@ new Chart(document.getElementById("chart"), {
   }
 });
 
-// AI Suggestion
-setInterval(()=>{
-  let w=queue.filter(p=>p.status==="Waiting").length;
-  document.getElementById("suggestion").innerText =
-    w>5 ? "⚠ High load!" : "✅ Smooth flow";
-},3000);
 
 // Logout
 function logout(){
