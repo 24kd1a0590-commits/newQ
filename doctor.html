@@ -135,10 +135,28 @@ body {
 </div>
 
 <!-- AI -->
+<!-- AI -->
 <div id="ai" class="p-6 hidden">
-  <div class="glass p-6 rounded-xl bg-purple-500/20">
-    <h2 class="mb-4">AI Suggestions</h2>
-    <p id="suggestion">Analyzing...</p>
+  <div class="grid md:grid-cols-2 gap-6">
+
+    <!-- Pie Chart -->
+    <div class="glass p-6 rounded-xl">
+      <h2 class="mb-4">Patient Status</h2>
+      <canvas id="statusChart" style="max-height:250px;"></canvas>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="glass p-6 rounded-xl">
+      <h2 class="mb-4">Consultation Time</h2>
+       <canvas id="timeChart" style="max-height:250px;"></canvas>
+    </div>
+
+    <!-- AI Suggestion -->
+    <div class="glass p-6 rounded-xl bg-purple-500/20 md:col-span-2">
+      <h2 class="mb-4">AI Suggestions</h2>
+      <p id="suggestion">Analyzing...</p>
+    </div>
+
   </div>
 </div>
 
@@ -187,7 +205,8 @@ async function loadQueue() {
   }));
   console.log("Doctor ID:", doctorId);
 console.log("Bookings:", data);
-
+updateAICharts(data);
+updateAISuggestions(data);
   renderQueue();
 }
 
@@ -221,7 +240,70 @@ function renderQueue() {
   document.getElementById("waitingCount").innerText =
     queue.filter(p=>p.status==="Waiting").length;
 }
+let statusChart, timeChart;
 
+function updateAICharts(data){
+
+  let waiting = data.filter(d=>d.status==="waiting").length;
+  let inProgress = data.filter(d=>d.status==="in_consultation").length;
+  let completed = data.filter(d=>d.status==="completed").length;
+
+  if(statusChart) statusChart.destroy();
+  statusChart = new Chart(document.getElementById("statusChart"), {
+  type: 'pie',
+  data: {
+    labels: ['Waiting','In Progress','Completed'],
+    datasets: [{
+      data: [waiting, inProgress, completed]
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false
+  }
+});
+  let completedPatients = data.filter(d=>d.actual_time);
+  let times = completedPatients.map(d=>d.actual_time);
+
+  let avg = times.length
+    ? Math.round(times.reduce((a,b)=>a+b,0)/times.length)
+    : 0;
+
+  if(timeChart) timeChart.destroy();
+  timeChart = new Chart(document.getElementById("timeChart"), {
+  type: 'bar',
+  data: {
+    labels: ['Avg Time'],
+    datasets: [{
+      label: 'Minutes',
+      data: [avg]
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false
+  }
+});
+}
+function updateAISuggestions(data){
+  let waiting = data.filter(d=>d.status==="waiting").length;
+
+  let avgTime = data
+    .filter(d=>d.actual_time)
+    .reduce((a,b)=>a+b.actual_time,0) / (data.length || 1);
+
+  let msg = "";
+
+  if(waiting > 5){
+    msg = "⚠ High patient load";
+  } else if(avgTime > 20){
+    msg = "⏱ Consultations taking longer";
+  } else {
+    msg = "✅ Smooth workflow";
+  }
+
+  document.getElementById("suggestion").innerText = msg;
+}
 // Actions
 async function startPatient(i){
   const patient = queue[i];
@@ -261,6 +343,7 @@ async function finishPatient(i){
     .eq('id', patient.id);
 
   loadQueue();
+  
 }
 
 // Notification
