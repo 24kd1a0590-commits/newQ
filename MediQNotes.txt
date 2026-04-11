@@ -1,0 +1,13 @@
+🗣️ 5. Symptom-based Pre-Check (Mini AI Assistant)
+👉 Problem:
+
+Manual entry is slow
+
+👉 AI Solution:
+
+Patient types symptoms → system suggests:
+
+Possible category
+Priority level
+🤖 Tech:
+NLP (basic keyword matching OR use API)

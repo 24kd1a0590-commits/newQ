@@ -160,7 +160,7 @@ body {
   const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-const doctorId = Number(localStorage.getItem("doctor_id"));
+const doctorId = localStorage.getItem("doctor_id");
 // Role check
 if (localStorage.getItem("role") !== "doctor") {
   window.location.href = "index.html";

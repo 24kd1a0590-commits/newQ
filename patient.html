@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HealthBook | Patient Portal</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script>
 function logout() {
   localStorage.clear();
@@ -197,7 +196,6 @@ class="cursor-pointer text-center hover:bg-white/10 p-2 rounded-lg">
                             <button onclick="confirmBooking()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition transform active:scale-95 shadow-lg shadow-blue-200">
                                 Confirm Booking
                             </button>
-                            <canvas id="qrCanvas" class="mt-4"></canvas>
                             <button onclick="closeBooking()" class="w-full mt-3 text-gray-400 py-2 font-medium hover:text-red-500 transition">
                                 Cancel
                             </button>
@@ -363,23 +361,31 @@ function showPage(page) {
         renderBookings();
     }
 }
-
 function openBooking(docId) {
-    selectedDoctor = doctors.find(d => d.id === docId);
+    selectedDoctor = doctors.find(d => d.id == docId);
+
+    console.log("Selected Doctor:", selectedDoctor);
+
+    if (!selectedDoctor) {
+        alert("Doctor not found");
+        return;
+    }
+
     document.getElementById('booking-content-empty').classList.add('hidden');
-    const activePanel = document.getElementById('booking-content-active');
-    activePanel.classList.remove('hidden');
+    document.getElementById('booking-content-active').classList.remove('hidden');
 
     document.getElementById('selected-doc-info').innerHTML = `
-        <p class="font-bold text-blue-800">${selectedDoctor.name}</p>
-        <p class="text-xs text-blue-600">${selectedDoctor.spec}</p>
+        <p class="font-bold">${selectedDoctor.name}</p>
+        <p class="text-xs">${selectedDoctor.spec}</p>
     `;
+
     document.getElementById('summary-fee').innerText = `₹${selectedDoctor.fee}`;
 
-    const times = ["09:00", "10:30", "13:00", "14:30", "16:00", "17:00"];
+    const times = ["09:00", "10:30", "13:00", "14:30", "16:00"];
     const slotsDiv = document.getElementById('time-slots');
+
     slotsDiv.innerHTML = times.map(t => `
-        <button onclick="selectTime('${t}', this)" class="slot-btn border border-gray-200 py-2 text-sm rounded-lg hover:border-blue-500 transition">
+        <button onclick="selectTime('${t}', this)" class="slot-btn border p-2 rounded">
             ${t}
         </button>
     `).join('');
@@ -392,51 +398,52 @@ function selectTime(time, el) {
 }
 
 async function confirmBooking() {
-    if (!selectedTime) return alert("Please select a time slot first!");
+    if (!selectedDoctor) {
+        alert("Select a doctor first");
+        return;
+    }
+
+    if (!selectedTime) {
+        alert("Select a time slot");
+        return;
+    }
 
     const patientName = localStorage.getItem("username") || "Patient";
 
-    // ✅ Get bookings ONLY for this doctor
-   const { data: existing } = await supabaseClient
-  .from('bookings')
-  .select('*')
-  .eq('doctor_id', selectedDoctor.id)
-  .in('status', ['waiting','in_consultation']);
-const queueNumber = existing.length + 1;
+    // STEP 1: get existing bookings for THIS doctor
+    const { data: existing, error: fetchError } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('doctor_id', selectedDoctor.id);
 
+    if (fetchError) {
+        console.error(fetchError);
+        alert(fetchError.message);
+        return;
+    }
+
+    const queueNumber = (existing || []).length + 1;
+
+    // STEP 2: insert booking
     const { error } = await supabaseClient
         .from('bookings')
         .insert([{
             doctor_id: selectedDoctor.id,
             doctor_name: selectedDoctor.name,
-            patient_name: patientName,   // ✅ IMPORTANT
+            patient_name: patientName,
             date: "Today",
             time: selectedTime,
             status: "waiting",
-            queue_number: queueNumber,
-            estimated_wait: queueNumber * 10  // optional logic
+            queue_number: queueNumber
         }]);
-        const bookingId = Math.random().toString(36).substring(2,9);
-
-// save QR ID
-await supabaseClient
-  .from('bookings')
-  .update({ qr_code: bookingId })
-  .eq('doctor_id', selectedDoctor.id)
-  .eq('patient_name', patientName)
-  .eq('time', selectedTime);
-
-// generate QR
-QRCode.toCanvas(document.getElementById('qrCanvas'), bookingId);
 
     if (error) {
+        console.error(error);
         alert("Error saving booking");
         return;
     }
 
-    const toast = document.getElementById('toast');
-    toast.classList.remove('translate-y-32');
-    setTimeout(() => toast.classList.add('translate-y-32'), 3000);
+    alert("Booking successful!");
 
     closeBooking();
     await renderBookings();
@@ -447,14 +454,11 @@ function closeBooking() {
     selectedDoctor = null;
     selectedTime = null;
 }
+
 async function renderBookings() {
-
-    const patientName = localStorage.getItem("username") || "Patient";
-
     const { data, error } = await supabaseClient
         .from('bookings')
         .select('*')
-        .eq('patient_name', patientName)
         .order('id', { ascending: false });
 
     if (error) {
@@ -464,60 +468,27 @@ async function renderBookings() {
 
     const list = document.getElementById('bookings-list');
 
-    const waits = await Promise.all(data.map(b => calculateWait(b)));
+    list.innerHTML = data.map(b => `
+    <div class="glass p-4 rounded-xl border flex justify-between">
+        <div>
+            <p class="font-bold">${b.doctor_name}</p>
+            <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
 
-    list.innerHTML = data.map((b, i) => {
-
-        const wait = waits[i];
-
-        // ⏰ Recommended arrival time
-        const reachTime = wait <= 10 ? "Reach Now"
-            : `Reach in ${wait - 10} mins`;
-
-        return `
-        <div class="glass p-4 rounded-xl border flex justify-between">
-            <div>
-                <p class="font-bold">${b.doctor_name}</p>
-                <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
-
-                <p class="text-xs text-white">
-                    Queue No: ${b.queue_number}
-                </p>
-
-                <p class="text-xs text-blue-400 mt-1">
-                    ⏳ Wait Time: ${wait} mins
-                </p>
-
-                <p class="text-xs text-green-400">
-                    📍 ${reachTime}
-                </p>
-            </div>
-
-            <span class="px-3 py-1 rounded-full text-xs font-bold
-                ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' :
-                  b.status === 'in_consultation' ? 'bg-green-100 text-green-600' :
-                  'bg-gray-200 text-gray-300'}">
-                ${b.status}
-            </span>
+            <p class="text-xs text-blue-600 mt-1">
+                ⏳ Waiting Time: ${b.estimated_wait || 0} mins
+            </p>
         </div>
-        `;
-    }).join('');
+
+        <span class="px-3 py-1 rounded-full text-xs font-bold
+            ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' :
+              b.status === 'in_consultation' ? 'bg-green-100 text-green-600' :
+              'bg-gray-200 text-gray-300'}">
+            ${b.status}
+        </span>
+    </div>
+`).join('');
 
     lucide.createIcons();
-}
-async function calculateWait(booking){
-
-  // get patients ahead of you
-  const { data: ahead } = await supabaseClient
-    .from('bookings')
-    .select('*')
-    .eq('doctor_id', booking.doctor_id)
-    .lt('queue_number', booking.queue_number)
-    .in('status', ['waiting','in_consultation']);
-
-  const avgTime = 10; // 10 mins per patient
-
-  return ahead.length * avgTime;
 }
 supabaseClient
     .channel('realtime-bookings')

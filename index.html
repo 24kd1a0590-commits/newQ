@@ -127,26 +127,25 @@ async function login() {
 
   localStorage.setItem("username", name);
   localStorage.setItem("role", role);
+if (role === "doctor") {
 
-  if (role === "doctor") {
+  const { data, error } = await supabaseClient
+    .from('doctors')
+    .select('id,name')
+    .ilike('email', email.trim())   // 🔥 safer matching
+    .single();
 
-    const { data, error } = await supabaseClient
-      .from('doctors')
-      .select('*')
-      .eq('email', email)
-      .single();
+  if (error || !data) {
+    alert("Doctor not found. Please use registered email.");
+    return;
+  }
 
-    if (error || !data) {
-      alert("Doctor not found with this email");
-      return;
-    }
-
-    // ✅ STORE REAL DOCTOR ID
-    localStorage.setItem("doctor_id", data.id);
-
-    window.location.href = "doctor.html";
-
-  } else {
+  // ✅ STORE CORRECT DATA
+  localStorage.setItem("doctor_id", data.id);
+  localStorage.setItem("username", data.name);
+  console.log("Doctor ID:", data.id);
+  window.location.href = "doctor.html";
+} else {
     window.location.href = "patient.html";
   }
 }
