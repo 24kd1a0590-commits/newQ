@@ -267,7 +267,7 @@ document.getElementById('locationFilter').addEventListener('change', applyFilter
     console.error("FULL ERROR:", err);
     alert(err.message);
 }
-    console.log(data);
+    console.log(allDoctors);
 }
 function highlightText(text, search) {
     if (!search) return text;
@@ -491,14 +491,21 @@ async function renderBookings() {
     lucide.createIcons();
 }
 supabaseClient
-    .channel('realtime-bookings')
-    .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'bookings' },
-        payload => {
-            renderBookings(); // auto refresh
-        }
-    )
-    .subscribe();
+  .channel('bookings-channel')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'bookings'
+    },
+    (payload) => {
+      console.log("Realtime update:", payload);
+
+      renderBookings(); // auto refresh UI
+    }
+  )
+  .subscribe();
 window.onload = init;
     </script>
 </body>
