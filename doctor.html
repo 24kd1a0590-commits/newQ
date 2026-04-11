@@ -386,12 +386,37 @@ document.getElementById("suggestion").innerText =
 // Actions
 async function startPatient(i){
   const patient = queue[i];
+  const now = new Date();
 
-  const { error } = await supabaseClient
+  // 🔹 1. Find any active patient
+  const { data: active } = await supabaseClient
     .from('bookings')
-    .update({ 
-        status: 'in_consultation',
-        started_at: new Date()
+    .select('*')
+    .eq('doctor_id', doctorId)
+    .eq('status', 'in_consultation')
+    .maybeSingle();
+
+  // 🔹 2. Auto-close previous patient (if exists)
+  if (active) {
+    const start = new Date(active.started_at);
+    const duration = Math.floor((now - start) / 60000);
+
+    await supabaseClient
+      .from('bookings')
+      .update({
+        status: 'completed',
+        ended_at: now,
+        actual_time: duration
+      })
+      .eq('id', active.id);
+  }
+
+  // 🔹 3. Start selected patient
+  await supabaseClient
+    .from('bookings')
+    .update({
+      status: 'in_consultation',
+      started_at: now
     })
     .eq('id', patient.id);
 
@@ -399,30 +424,32 @@ async function startPatient(i){
 }
 async function finishPatient(i){
   const patient = queue[i];
+  const now = new Date();
 
-  const endTime = new Date();
-
-  // get start time
-  const { data } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from('bookings')
     .select('started_at')
     .eq('id', patient.id)
     .single();
 
+  if (error || !data.started_at) {
+    console.error("Start time missing");
+    return;
+  }
+
   const start = new Date(data.started_at);
-  const duration = Math.floor((endTime - start) / 60000);
+  const duration = Math.floor((now - start) / 60000);
 
   await supabaseClient
     .from('bookings')
-    .update({ 
-        status: 'completed',
-        ended_at: endTime,
-        actual_time: duration
+    .update({
+      status: 'completed',
+      ended_at: now,
+      actual_time: duration
     })
     .eq('id', patient.id);
 
   loadQueue();
-  
 }
 
 // Notification
@@ -431,9 +458,35 @@ function notify(){
   n.classList.remove("hidden");
   setTimeout(()=>n.classList.add("hidden"),2000);
 }
+async function autoCloseLongConsultations(){
 
+  const now = new Date();
+  const MAX_TIME = 30; // minutes
 
+  const { data } = await supabaseClient
+    .from('bookings')
+    .select('*')
+    .eq('doctor_id', doctorId)
+    .eq('status', 'in_consultation');
 
+  data.forEach(async (p) => {
+    const start = new Date(p.started_at);
+    const duration = (now - start) / 60000;
+
+    if (duration > MAX_TIME) {
+      await supabaseClient
+        .from('bookings')
+        .update({
+          status: 'completed',
+          ended_at: now,
+          actual_time: Math.floor(duration)
+        })
+        .eq('id', p.id);
+    }
+  });
+}
+
+setInterval(autoCloseLongConsultations, 120000); // every 2 mins
 // Chart
 new Chart(document.getElementById("chart"), {
   type:'bar',
