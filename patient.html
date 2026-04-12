@@ -42,7 +42,7 @@ body { font-family: 'Inter', sans-serif; }
 </style>
 </head>
 <body class="bg-[#0f172a] text-white">
-
+<audio id="notify-sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
     <div class="flex h-screen overflow-hidden">
         
         <aside class="w-64 glass border-r border-gray-200 flex flex-col hidden md:flex">
@@ -255,6 +255,9 @@ function selectProblem(specialization) {
     // Trigger filtering
     applyFilters();
 }
+function playSound() {
+    document.getElementById("notify-sound").play();
+}
 // 2. FETCH DATA FROM YOUR DATASET
 async function init() {
     try {
@@ -417,34 +420,42 @@ async function renderQueueStatus() {
         container.innerHTML = `<p class="text-gray-400">No active appointments</p>`;
         return;
     }
+container.innerHTML = data.map(b => {
 
-    container.innerHTML = data.map(b => {
+    const ahead = b.queue_number - 1;   // ✅ FIX
+    const waitTime = ahead * 5;
 
-        const ahead = b.queue_number - 1;
+    return `
+    <div class="glass p-5 rounded-xl border border-white/10">
 
-        return `
-        <div class="glass p-5 rounded-xl border border-white/10">
+        <h3 class="text-lg font-bold">${b.doctor_name}</h3>
 
-            <h3 class="text-lg font-bold">${b.doctor_name}</h3>
+        <p class="text-sm text-gray-400">Time: ${b.time}</p>
 
-            <p class="text-sm text-gray-400">Time: ${b.time}</p>
-
-            <div class="mt-3 text-blue-400 font-semibold">
-                You are #${b.queue_number} in queue
-            </div>
-
-            <div class="text-sm text-gray-300 mt-1">
-                ${ahead} patient(s) ahead of you
-            </div>
-
-            <div class="text-green-400 mt-2 text-sm">
-                Status: ${b.status}
-            </div>
-
+        <div class="mt-3 text-blue-400 font-semibold">
+            You are #${b.queue_number} in queue
         </div>
-        `;
-    }).join('');
+
+        <div class="text-sm text-gray-300 mt-1">
+            ${ahead} patient(s) ahead of you
+        </div>
+
+        <div class="text-yellow-400 mt-2 text-sm">
+            ⏳ Estimated wait: ${waitTime} mins
+        </div>
+
+        <div class="text-green-400 mt-2 text-sm">
+            Status: ${b.status}
+        </div>
+
+    </div>
+    `;
+}).join('');
+    
 }
+setInterval(() => {
+    renderQueueStatus();
+}, 10000); // updates every 10 seconds
 function openBooking(docId) {
     selectedDoctor = doctors.find(d => d.id == docId);
 
@@ -588,19 +599,24 @@ supabaseClient
 
     const newData = payload.new;
 
-    if (
-        newData &&
-        newData.status === 'completed' &&
-        newData.id !== lastCompletedId
-    ) {
+    if (!newData) return;
+
+    // ✅ Visit completed
+    if (newData.status === 'completed' && newData.id !== lastCompletedId) {
         lastCompletedId = newData.id;
         showCompletionPopup();
+        playSound();
+    }
+
+    // 🚨 Your turn next (queue = 1)
+    if (newData.queue_number === 1 && newData.status === 'waiting') {
+        alert("🚨 It's your turn! Please get ready.");
+        playSound();
     }
 
     renderBookings();
     renderQueueStatus();
-}
-  )
+} )
   .subscribe();
   
 window.onload = init;
