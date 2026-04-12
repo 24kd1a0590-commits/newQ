@@ -77,11 +77,7 @@ body { font-family: 'Inter', sans-serif; }
                     </div>
                 </div>
             </div>
-            <div class="flex gap-1 mt-2">
-    ${Array.from({length: ahead}).map(() => `
-        <div class="w-6 h-6 bg-blue-500 rounded-full"></div>
-    `).join('')}
-</div>
+            
         </aside>
 <main class="flex-1 flex flex-col min-w-0 bg-transparent">
             
@@ -414,75 +410,79 @@ async function renderQueueStatus() {
         .in('status', ['waiting', 'in_consultation'])
         .order('queue_number', { ascending: true });
 
-    if (error) {
-        console.error(error);
-        return;
-    }
+    if (error) return;
 
     const container = document.getElementById('queue-container');
 
     if (!data || data.length === 0) {
-        container.innerHTML = `<p class="text-gray-400">No active appointments</p>`;
+        container.innerHTML = `<p class="text-gray-400 text-center">No active appointments</p>`;
         return;
     }
-container.innerHTML = data.map(b => {
 
-    const ahead = b.queue_number - 1;
-    const waitTime = ahead * 5;
+    container.innerHTML = data.map(b => {
 
-    const progress = Math.max(0, 100 - (ahead * 20)); // progress %
+        const ahead = b.queue_number - 1;
+        const total = ahead + 3; // assume 3 more patients total (adjust later)
+        const progress = ((total - ahead) / total) * 100;
 
-    // 🎯 Fun delay reasons
-    const reasons = [
-        "Doctor is giving extra care ❤️",
-        "Emergency case handled 🚑",
-        "Patient needed more time 🩺",
-        "System ensuring quality check 🔍"
-    ];
+        const waitTime = ahead * 5;
+        const arrivalTime = new Date(Date.now() + waitTime * 60000)
+            .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const randomReason = reasons[Math.floor(Math.random() * reasons.length)];
+        // create visual queue blocks
+        let queueVisual = "";
 
-    return `
-    <div class="glass p-6 rounded-2xl border border-white/10 shadow-xl">
+        for (let i = 0; i < total; i++) {
+            if (i < ahead) {
+                queueVisual += `<div class="w-6 h-6 bg-gray-500 rounded-full"></div>`;
+            } else if (i === ahead) {
+                queueVisual += `<div class="w-6 h-6 bg-green-400 rounded-full animate-pulse"></div>`;
+            } else {
+                queueVisual += `<div class="w-6 h-6 bg-blue-500/40 rounded-full"></div>`;
+            }
+        }
 
-        <h3 class="text-lg font-bold mb-2">${b.doctor_name}</h3>
+        return `
+        <div class="glass p-6 rounded-2xl border border-white/10">
 
-        <!-- 🎮 Progress Bar -->
-        <div class="w-full bg-gray-700 rounded-full h-3 mb-3">
-            <div class="bg-green-400 h-3 rounded-full transition-all duration-500"
-                style="width:${progress}%">
+            <h3 class="text-lg font-bold mb-3">${b.doctor_name}</h3>
+
+            <!-- 🔥 VISUAL QUEUE -->
+            <div class="flex gap-2 mb-4 justify-center">
+                ${queueVisual}
             </div>
+
+            <!-- 🔥 PROGRESS BAR -->
+            <div class="w-full bg-white/10 rounded-full h-3 mb-4">
+                <div class="bg-blue-500 h-3 rounded-full transition-all duration-700"
+                     style="width:${progress}%"></div>
+            </div>
+
+            <!-- 🔥 KEY INFO (MINIMAL TEXT) -->
+            <div class="grid grid-cols-2 gap-4 text-center">
+
+                <div>
+                    <p class="text-gray-400 text-xs">Ahead</p>
+                    <p class="text-xl font-bold text-white">${ahead}</p>
+                </div>
+
+                <div>
+                    <p class="text-gray-400 text-xs">Arrive By</p>
+                    <p class="text-xl font-bold text-green-400">${arrivalTime}</p>
+                </div>
+
+            </div>
+
+            <!-- 🔥 CALM MESSAGE -->
+            <p class="text-center text-sm text-blue-300 mt-4">
+                ${ahead === 0 
+                    ? "You're next. Please be ready." 
+                    : "Doctor is attending patients carefully. You're progressing smoothly."}
+            </p>
+
         </div>
-
-        <p class="text-sm text-gray-300 mb-2">
-            🧍 Patients ahead: <b>${ahead}</b>
-        </p>
-
-        <p class="text-sm text-blue-400 font-semibold">
-            ⏳ Estimated wait: ${waitTime} mins
-        </p>
-
-        <!-- 🕒 Arrival Suggestion -->
-        <p class="text-sm text-green-400 mt-2">
-            📍 Suggested arrival: ${waitTime <= 10 ? "Now 🚶" : `in ${waitTime - 5} mins`}
-        </p>
-
-        <!-- 🎭 Gamified Reason -->
-        <p class="text-xs text-yellow-300 mt-3 italic">
-            ${randomReason}
-        </p>
-
-        <!-- 🎉 Motivation -->
-        <p class="text-xs text-purple-300 mt-2">
-            ${ahead === 0 ? "🎉 It's your turn!" :
-              ahead === 1 ? "🔥 You're next! Get ready!" :
-              "Relax, you're moving forward 😊"}
-        </p>
-
-    </div>
-    `;
-}).join('');
-    
+        `;
+    }).join('');
 }
 setInterval(() => {
     renderQueueStatus();
