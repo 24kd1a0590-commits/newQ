@@ -272,6 +272,7 @@ let myBookings = [
 let lastCompletedId = null;
 let selectedDoctor = null;
 let selectedTime = null;
+let voicePlayed = false;
 function selectProblem(specialization) {
     // Set search box value automatically
     document.getElementById('searchInput').value = specialization;
@@ -469,10 +470,13 @@ async function renderQueueStatus() {
         const reason = getDelayReason(ahead);
 
         // 🔊 Voice when near turn
-        if (ahead === 1) {
-            speak("You are next. Please get ready.");
-        }
-
+       if (ahead === 1 && !voicePlayed) {
+    speak("You are next. Please get ready.");
+    voicePlayed = true;
+}
+if (ahead > 1) {
+    voicePlayed = false;
+}
         let queueVisual = "";
 
         for (let i = 0; i < total; i++) {
