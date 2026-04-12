@@ -77,6 +77,11 @@ body { font-family: 'Inter', sans-serif; }
                     </div>
                 </div>
             </div>
+            <div class="flex gap-1 mt-2">
+    ${Array.from({length: ahead}).map(() => `
+        <div class="w-6 h-6 bg-blue-500 rounded-full"></div>
+    `).join('')}
+</div>
         </aside>
 <main class="flex-1 flex flex-col min-w-0 bg-transparent">
             
@@ -422,31 +427,57 @@ async function renderQueueStatus() {
     }
 container.innerHTML = data.map(b => {
 
-    const ahead = b.queue_number - 1;   // ✅ FIX
+    const ahead = b.queue_number - 1;
     const waitTime = ahead * 5;
 
+    const progress = Math.max(0, 100 - (ahead * 20)); // progress %
+
+    // 🎯 Fun delay reasons
+    const reasons = [
+        "Doctor is giving extra care ❤️",
+        "Emergency case handled 🚑",
+        "Patient needed more time 🩺",
+        "System ensuring quality check 🔍"
+    ];
+
+    const randomReason = reasons[Math.floor(Math.random() * reasons.length)];
+
     return `
-    <div class="glass p-5 rounded-xl border border-white/10">
+    <div class="glass p-6 rounded-2xl border border-white/10 shadow-xl">
 
-        <h3 class="text-lg font-bold">${b.doctor_name}</h3>
+        <h3 class="text-lg font-bold mb-2">${b.doctor_name}</h3>
 
-        <p class="text-sm text-gray-400">Time: ${b.time}</p>
-
-        <div class="mt-3 text-blue-400 font-semibold">
-            You are #${b.queue_number} in queue
+        <!-- 🎮 Progress Bar -->
+        <div class="w-full bg-gray-700 rounded-full h-3 mb-3">
+            <div class="bg-green-400 h-3 rounded-full transition-all duration-500"
+                style="width:${progress}%">
+            </div>
         </div>
 
-        <div class="text-sm text-gray-300 mt-1">
-            ${ahead} patient(s) ahead of you
-        </div>
+        <p class="text-sm text-gray-300 mb-2">
+            🧍 Patients ahead: <b>${ahead}</b>
+        </p>
 
-        <div class="text-yellow-400 mt-2 text-sm">
+        <p class="text-sm text-blue-400 font-semibold">
             ⏳ Estimated wait: ${waitTime} mins
-        </div>
+        </p>
 
-        <div class="text-green-400 mt-2 text-sm">
-            Status: ${b.status}
-        </div>
+        <!-- 🕒 Arrival Suggestion -->
+        <p class="text-sm text-green-400 mt-2">
+            📍 Suggested arrival: ${waitTime <= 10 ? "Now 🚶" : `in ${waitTime - 5} mins`}
+        </p>
+
+        <!-- 🎭 Gamified Reason -->
+        <p class="text-xs text-yellow-300 mt-3 italic">
+            ${randomReason}
+        </p>
+
+        <!-- 🎉 Motivation -->
+        <p class="text-xs text-purple-300 mt-2">
+            ${ahead === 0 ? "🎉 It's your turn!" :
+              ahead === 1 ? "🔥 You're next! Get ready!" :
+              "Relax, you're moving forward 😊"}
+        </p>
 
     </div>
     `;
@@ -613,7 +644,10 @@ supabaseClient
         alert("🚨 It's your turn! Please get ready.");
         playSound();
     }
-
+    if (ahead === 1) {
+    alert("🔥 You're next! Please get ready.");
+    playSound();
+}
     renderBookings();
     renderQueueStatus();
 } )
