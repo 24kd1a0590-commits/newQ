@@ -39,6 +39,29 @@ body { font-family: 'Inter', sans-serif; }
     background: #555; 
     border-radius: 10px; 
 }
+/* 🔥 Queue Animation */
+@keyframes flow {
+    0% { transform: translateX(0); opacity: 0.6; }
+    50% { transform: translateX(6px); opacity: 1; }
+    100% { transform: translateX(0); opacity: 0.6; }
+}
+
+.queue-dot {
+    animation: flow 1.5s infinite ease-in-out;
+}
+
+/* ❤️ Heartbeat */
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.1); }
+    40% { transform: scale(1); }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.heartbeat {
+    animation: heartbeat 1.2s infinite;
+}
 </style>
 </head>
 <body class="bg-[#0f172a] text-white">
@@ -399,6 +422,19 @@ function showPage(page) {
         renderQueueStatus();
     }
 }
+function getDelayReason(ahead) {
+    if (ahead === 0) return "Doctor is preparing for your consultation.";
+    if (ahead === 1) return "Current consultation is taking slightly longer than expected.";
+    if (ahead <= 3) return "Doctor is giving detailed attention to each patient.";
+    return "High patient volume today. System is optimizing queue.";
+}
+function speak(message) {
+    const speech = new SpeechSynthesisUtterance(message);
+    speech.rate = 1;
+    speech.pitch = 1;
+    speech.volume = 1;
+    window.speechSynthesis.speak(speech);
+}
 async function renderQueueStatus() {
 
     const patientName = localStorage.getItem("username");
@@ -422,63 +458,66 @@ async function renderQueueStatus() {
     container.innerHTML = data.map(b => {
 
         const ahead = b.queue_number - 1;
-        const total = ahead + 3; // assume 3 more patients total (adjust later)
+        const total = ahead + 3;
         const progress = ((total - ahead) / total) * 100;
 
         const waitTime = ahead * 5;
+
         const arrivalTime = new Date(Date.now() + waitTime * 60000)
             .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // create visual queue blocks
+        const reason = getDelayReason(ahead);
+
+        // 🔊 Voice when near turn
+        if (ahead === 1) {
+            speak("You are next. Please get ready.");
+        }
+
         let queueVisual = "";
 
         for (let i = 0; i < total; i++) {
             if (i < ahead) {
-                queueVisual += `<div class="w-6 h-6 bg-gray-500 rounded-full"></div>`;
-            } else if (i === ahead) {
-                queueVisual += `<div class="w-6 h-6 bg-green-400 rounded-full animate-pulse"></div>`;
-            } else {
-                queueVisual += `<div class="w-6 h-6 bg-blue-500/40 rounded-full"></div>`;
+                queueVisual += `<div class="w-6 h-6 bg-gray-500 rounded-full queue-dot"></div>`;
+            } 
+            else if (i === ahead) {
+                queueVisual += `<div class="w-6 h-6 bg-green-400 rounded-full heartbeat"></div>`;
+            } 
+            else {
+                queueVisual += `<div class="w-6 h-6 bg-blue-500/40 rounded-full queue-dot"></div>`;
             }
         }
 
         return `
         <div class="glass p-6 rounded-2xl border border-white/10">
 
-            <h3 class="text-lg font-bold mb-3">${b.doctor_name}</h3>
+            <h3 class="text-lg font-bold mb-4 text-center">${b.doctor_name}</h3>
 
-            <!-- 🔥 VISUAL QUEUE -->
-            <div class="flex gap-2 mb-4 justify-center">
+            <div class="flex gap-2 justify-center mb-5">
                 ${queueVisual}
             </div>
 
-            <!-- 🔥 PROGRESS BAR -->
-            <div class="w-full bg-white/10 rounded-full h-3 mb-4">
+            <div class="w-full bg-white/10 rounded-full h-3 mb-5">
                 <div class="bg-blue-500 h-3 rounded-full transition-all duration-700"
                      style="width:${progress}%"></div>
             </div>
 
-            <!-- 🔥 KEY INFO (MINIMAL TEXT) -->
             <div class="grid grid-cols-2 gap-4 text-center">
 
                 <div>
-                    <p class="text-gray-400 text-xs">Ahead</p>
-                    <p class="text-xl font-bold text-white">${ahead}</p>
+                    <p class="text-gray-400 text-xs">Patients Ahead</p>
+                    <p class="text-2xl font-bold">${ahead}</p>
                 </div>
 
                 <div>
                     <p class="text-gray-400 text-xs">Arrive By</p>
-                    <p class="text-xl font-bold text-green-400">${arrivalTime}</p>
+                    <p class="text-2xl font-bold text-green-400">${arrivalTime}</p>
                 </div>
 
             </div>
 
-            <!-- 🔥 CALM MESSAGE -->
-            <p class="text-center text-sm text-blue-300 mt-4">
-                ${ahead === 0 
-                    ? "You're next. Please be ready." 
-                    : "Doctor is attending patients carefully. You're progressing smoothly."}
-            </p>
+            <div class="mt-5 text-center text-sm text-blue-300">
+                ${reason}
+            </div>
 
         </div>
         `;
