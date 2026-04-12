@@ -221,7 +221,19 @@ class="cursor-pointer text-center hover:bg-white/10 p-2 rounded-lg">
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl transform translate-y-32 transition-transform duration-300 z-50">
         Booking confirmed successfully!
     </div>
+     <div id="completion-popup" 
+class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
 
+    <div class="glass p-8 rounded-2xl text-center shadow-2xl animate-bounce">
+        <h2 class="text-2xl font-bold text-green-400 mb-2">✅ Visit Completed</h2>
+        <p class="text-gray-300 mb-4">Your consultation is finished</p>
+
+        <button onclick="closeCompletionPopup()" 
+        class="bg-green-500 px-5 py-2 rounded-lg font-bold hover:bg-green-600">
+            OK
+        </button>
+    </div>
+</div>
     <script>
   // 1. INITIALIZE SUPABASE
 const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
@@ -233,7 +245,7 @@ let allDoctors = [];
 let myBookings = [
     { id: 101, docName: "Dr. Sarah Jenkins", date: "Oct 24, 2023", time: "10:30 AM", status: "Completed" }
 ];
-
+let lastCompletedId = null;
 let selectedDoctor = null;
 let selectedTime = null;
 function selectProblem(specialization) {
@@ -526,7 +538,13 @@ function closeBooking() {
     selectedDoctor = null;
     selectedTime = null;
 }
+function showCompletionPopup() {
+    document.getElementById('completion-popup').classList.remove('hidden');
+}
 
+function closeCompletionPopup() {
+    document.getElementById('completion-popup').classList.add('hidden');
+}
 async function renderBookings() {
     const { data, error } = await supabaseClient
     .from('bookings')
@@ -566,10 +584,22 @@ supabaseClient
   .channel('bookings-channel')
   .on('postgres_changes',
     { event: '*', schema: 'public', table: 'bookings' },
-    () => {
-        renderBookings();
-        renderQueueStatus(); // 🔥 ADD THIS
+    (payload) => {
+
+    const newData = payload.new;
+
+    if (
+        newData &&
+        newData.status === 'completed' &&
+        newData.id !== lastCompletedId
+    ) {
+        lastCompletedId = newData.id;
+        showCompletionPopup();
     }
+
+    renderBookings();
+    renderQueueStatus();
+}
   )
   .subscribe();
   
