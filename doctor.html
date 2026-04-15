@@ -93,7 +93,14 @@ body {
   </div>
 
   <div class="mt-6 glass p-5 rounded-xl">
-    <h2 class="mb-2">Live Status</h2>
+    <div class="flex justify-between items-center mb-3">
+  <h2 class="mb-2">Live Status</h2>
+
+  <button onclick="activateEmergency()" 
+  class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold shadow-lg">
+    🚨 Emergency Mode
+  </button>
+</div>
     <p>
       ⏱ Avg wait time: <span class="text-yellow-400">15 mins</span><br>
       👨‍⚕️ System running smoothly
@@ -238,13 +245,53 @@ updateAISuggestions(data);
 updatePerformanceChart(data);
   renderQueue();
 }
+async function activateEmergency() {
 
+  // 🔴 Get first waiting patient (top of queue)
+  const { data, error } = await supabaseClient
+    .from('bookings')
+    .select('*')
+    .eq('doctor_id', doctorId)
+    .eq('status', 'waiting')
+    .order('queue_number', { ascending: true })
+    .limit(1);
+
+  if (error || !data || data.length === 0) {
+    alert("No waiting patients");
+    return;
+  }
+
+  const patient = data[0];
+
+  // 🔥 Mark as emergency
+  const { error: updateError } = await supabaseClient
+    .from('bookings')
+    .update({
+      is_emergency: true,
+      priority: 3
+    })
+    .eq('id', patient.id);
+
+  if (updateError) {
+    alert("Error activating emergency");
+    return;
+  }
+
+  alert("🚨 Emergency activated for next patient");
+
+  loadQueue(); // refresh UI
+}
 // Render Queue
 function renderQueue() {
   const table = document.getElementById("queueTable");
   table.innerHTML = "";
 
-  queue.forEach((p, i) => {
+  // 🔹 Separate patients
+  let activePatients = queue.filter(p => p.status !== "Done");
+  let completedPatients = queue.filter(p => p.status === "Done");
+
+  // 🔹 Render ACTIVE patients first
+  activePatients.forEach((p, i) => {
     let color =
       p.status==="Waiting" ? "bg-yellow-400 text-black" :
       p.status==="In Progress" ? "bg-blue-500" :
@@ -257,21 +304,39 @@ function renderQueue() {
         <td>${p.issue}</td>
         <td><span class="${color} px-2 py-1 rounded">${p.status}</span></td>
         <td>
-  <button onclick="startPatient(${i})" class="bg-blue-500 px-2 py-1 rounded mr-2">Start</button>
-
-  <button onclick="markEmergency(${i})" 
-    class="bg-red-600 px-2 py-1 rounded mr-2">
-    🚨 Emergency
-  </button>
-
-  <button onclick="finishPatient(${i})" class="bg-green-500 px-2 py-1 rounded">
-    Done
-  </button>
-</td>
+          <button onclick="startPatient(${i})" class="bg-blue-500 px-2 py-1 rounded mr-2">Start</button>
+          <button onclick="markEmergency(${i})" class="bg-red-600 px-2 py-1 rounded mr-2">🚨 Emergency</button>
+          <button onclick="finishPatient(${i})" class="bg-green-500 px-2 py-1 rounded">Done</button>
+        </td>
       </tr>
     `;
   });
 
+  // 🔻 Add COMPLETED SECTION HEADER
+  if (completedPatients.length > 0) {
+    table.innerHTML += `
+      <tr>
+        <td colspan="5" class="text-center text-green-400 font-bold py-3">
+          ✅ Completed Patients
+        </td>
+      </tr>
+    `;
+  }
+
+  // 🔹 Render COMPLETED patients at bottom
+  completedPatients.forEach((p, i) => {
+    table.innerHTML += `
+      <tr class="border-b border-white/10 opacity-70">
+        <td>-</td>
+        <td>${p.name}</td>
+        <td>${p.issue}</td>
+        <td><span class="bg-green-500 px-2 py-1 rounded">Done</span></td>
+        <td>✔ Completed</td>
+      </tr>
+    `;
+  });
+
+  // 🔹 Update counts
   document.getElementById("totalPatients").innerText = queue.length;
   document.getElementById("appointments").innerText = queue.length;
   document.getElementById("waitingCount").innerText =
