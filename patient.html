@@ -263,7 +263,7 @@ class="cursor-pointer text-center hover:bg-white/10 p-2 rounded-lg">
         Booking confirmed successfully!
     </div>
      <div id="completion-popup" 
-class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
 
     <div class="glass p-8 rounded-2xl text-center shadow-2xl animate-bounce">
         <h2 class="text-2xl font-bold text-green-400 mb-2">✅ Visit Completed</h2>
@@ -274,6 +274,40 @@ class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
             OK
         </button>
     </div>
+</div>
+<div id="cancel-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
+  <div class="glass p-6 rounded-xl w-96">
+    
+    <h2 class="text-lg font-bold mb-4">Cancel Appointment</h2>
+
+    <!-- Reason -->
+    <label class="text-sm">Reason:</label>
+    <select id="cancel-reason" class="w-full mt-2 mb-4 p-2 bg-white/10 rounded">
+      <option>Not feeling well</option>
+      <option>Booked by mistake</option>
+      <option>Going to another doctor</option>
+      <option>Emergency</option>
+    </select>
+
+    <!-- Custom reason -->
+    <input id="custom-reason" placeholder="Other reason..."
+      class="w-full p-2 bg-white/10 rounded mb-4"/>
+
+    <!-- Checkbox -->
+    <label class="flex items-center gap-2 text-sm mb-4">
+      <input type="checkbox" id="confirm-cancel"/>
+      I understand this cannot be undone
+    </label>
+
+    <!-- Buttons -->
+    <div class="flex justify-end gap-3">
+      <button onclick="closeCancelModal()" class="text-gray-400">Close</button>
+      <button onclick="finalCancel()" class="bg-red-500 px-4 py-2 rounded">
+        Confirm Cancel
+      </button>
+    </div>
+
+  </div>
 </div>
     <script>
   // 1. INITIALIZE SUPABASE
@@ -290,6 +324,16 @@ let lastCompletedId = null;
 let selectedDoctor = null;
 let selectedTime = null;
 let voicePlayed = false;
+let cancelId = null;
+
+function openCancelModal(id) {
+    cancelId = id;
+    document.getElementById("cancel-modal").classList.remove("hidden");
+}
+
+function closeCancelModal() {
+    document.getElementById("cancel-modal").classList.add("hidden");
+}
 function selectProblem(specialization) {
     // Set search box value automatically
     document.getElementById('searchInput').value = specialization;
@@ -469,7 +513,7 @@ async function renderQueueStatus() {
         .from('bookings')
         .select('*')
         .eq('patient_name', patientName)
-        .in('status', ['waiting', 'in_consultation'])
+        .neq('status', 'cancelled')
         .order('priority', { ascending: false })
         .order('queue_number', { ascending: true });
 
@@ -684,7 +728,9 @@ async function confirmBooking() {
         return;
     }
 
-    const queueNumber = (existing || []).length + 1;
+    const activeBookings = existing.filter(b => b.status !== 'cancelled');
+
+const queueNumber = activeBookings.length + 1;
 
     // STEP 2: insert booking
    const { error } = await supabaseClient
@@ -727,7 +773,8 @@ async function renderBookings() {
     const { data, error } = await supabaseClient
     .from('bookings')
     .select('*')
-    .neq('status', 'completed')   // 🔥 THIS LINE ADDED
+    .neq('status', 'completed') 
+    .neq('status', 'cancelled')  // 🔥 THIS LINE ADDED
     .order('id', { ascending: false });
     if (error) {
         console.error(error);
@@ -737,26 +784,101 @@ async function renderBookings() {
     const list = document.getElementById('bookings-list');
 
     list.innerHTML = data.map(b => `
-    <div class="glass p-4 rounded-xl border flex justify-between">
-        <div>
-            <p class="font-bold">${b.doctor_name}</p>
-            <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
+<div class="glass p-4 rounded-xl border flex justify-between">
+    <div>
+        <p class="font-bold">${b.doctor_name}</p>
+        <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
+    </div>
 
-            <p class="text-xs text-blue-600 mt-1">
-                ⏳ Waiting Time: ${b.estimated_wait || 0} mins
-            </p>
-        </div>
-
+    <div class="flex flex-col gap-2 items-end">
         <span class="px-3 py-1 rounded-full text-xs font-bold
-            ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' :
-              b.status === 'in_consultation' ? 'bg-green-100 text-green-600' :
-              'bg-gray-200 text-gray-300'}">
+        ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' : 
+          'bg-green-100 text-green-600'}">
             ${b.status}
         </span>
+
+        ${b.status === 'waiting' ? `
+        <button onclick="openCancelModal(${b.id})"
+        class="text-red-400 text-xs hover:underline">
+            Cancel
+        </button>` : ''}
     </div>
+</div>
 `).join('');
 
+
     lucide.createIcons();
+}
+async function finalCancel() {
+
+    const checkbox = document.getElementById("confirm-cancel").checked;
+    const reason = document.getElementById("cancel-reason").value;
+    const custom = document.getElementById("custom-reason").value;
+
+    if (!checkbox) {
+        alert("Please confirm cancellation");
+        return;
+    }
+
+    // Get booking
+    const { data: booking } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('id', cancelId)
+        .single();
+
+    if (!booking) return;
+
+    // ❌ RULE 1: cannot cancel during consultation
+    if (booking.status === "in_consultation") {
+        alert("Cannot cancel during consultation");
+        return;
+    }
+
+    // ❌ RULE 2: cannot cancel if turn is near
+    if (booking.queue_number <= 2) {
+        alert("Too late to cancel. Please contact reception.");
+        return;
+    }
+
+    // Proceed
+    await processCancellation(booking, reason || custom);
+
+    closeCancelModal();
+}
+async function processCancellation(booking, reason) {
+
+    const doctorId = booking.doctor_id;
+    const cancelledQueue = booking.queue_number;
+
+    // 1️⃣ mark cancelled
+    await supabaseClient
+        .from('bookings')
+        .update({ 
+            status: 'cancelled',
+            cancel_reason: reason
+        })
+        .eq('id', booking.id);
+
+    // 2️⃣ shift queue
+    const { data: others } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('doctor_id', doctorId)
+        .gt('queue_number', cancelledQueue)
+        .neq('status', 'cancelled');
+
+    for (let b of others) {
+        await supabaseClient
+            .from('bookings')
+            .update({ queue_number: b.queue_number - 1 })
+            .eq('id', b.id);
+    }
+
+    smartNotify("Booking cancelled successfully", "warning");
+
+    renderBookings();
+    renderQueueStatus();
 }
 async function loadAnalytics() {
     const { data } = await supabaseClient
@@ -769,6 +891,49 @@ async function loadAnalytics() {
 
     document.getElementById("totalPatients").innerText = total;
     document.getElementById("avgWait").innerText = avg.toFixed(1) + " mins";
+}
+async function cancelBooking(id) {
+
+    const confirmCancel = confirm("Are you sure you want to cancel?");
+    if (!confirmCancel) return;
+
+    // 1️⃣ Get booking details
+    const { data: booking } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (!booking) return;
+
+    const doctorId = booking.doctor_id;
+    const cancelledQueue = booking.queue_number;
+
+    // 2️⃣ Mark as cancelled
+    await supabaseClient
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+
+    // 3️⃣ SHIFT QUEUE UP (IMPORTANT 🔥)
+    const { data: others } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('doctor_id', doctorId)
+        .gt('queue_number', cancelledQueue)
+        .neq('status', 'cancelled');
+
+    for (let b of others) {
+        await supabaseClient
+            .from('bookings')
+            .update({ queue_number: b.queue_number - 1 })
+            .eq('id', b.id);
+    }
+
+    // 4️⃣ UI updates
+    smartNotify("Booking cancelled successfully", "warning");
+    renderBookings();
+    renderQueueStatus();
 }
 function smartNotify(message, type="info") {
 
