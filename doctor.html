@@ -217,7 +217,8 @@ async function loadQueue() {
     .from('bookings')
     .select('*')
     .eq('doctor_id', doctorId)   // ✅ ONLY THIS DOCTOR
-    .order('queue_number', { ascending: true });
+    .order('priority', { ascending: false })
+.order('queue_number', { ascending: true });
   if (error) {
     console.error(error);
     return;
@@ -256,9 +257,17 @@ function renderQueue() {
         <td>${p.issue}</td>
         <td><span class="${color} px-2 py-1 rounded">${p.status}</span></td>
         <td>
-          <button onclick="startPatient(${i})" class="bg-blue-500 px-2 py-1 rounded mr-2">Start</button>
-          <button onclick="finishPatient(${i})" class="bg-green-500 px-2 py-1 rounded">Done</button>
-        </td>
+  <button onclick="startPatient(${i})" class="bg-blue-500 px-2 py-1 rounded mr-2">Start</button>
+
+  <button onclick="markEmergency(${i})" 
+    class="bg-red-600 px-2 py-1 rounded mr-2">
+    🚨 Emergency
+  </button>
+
+  <button onclick="finishPatient(${i})" class="bg-green-500 px-2 py-1 rounded">
+    Done
+  </button>
+</td>
       </tr>
     `;
   });
@@ -346,7 +355,21 @@ function updateAICharts(data){
     }
   });
 }
+async function markEmergency(i) {
+  const patient = queue[i];
 
+  await supabaseClient
+    .from('bookings')
+    .update({ 
+      is_emergency: true,
+      priority: 3   // 🔥 highest priority
+    })
+    .eq('id', patient.id);
+
+  alert("🚨 Emergency case activated");
+
+  loadQueue(); // refresh UI
+}
 function updateAISuggestions(data){
   let waiting = data.filter(d=>d.status==="waiting").length;
   let completed = data.filter(d=>d.status==="completed");
