@@ -151,9 +151,33 @@ body {
 
   <!-- CURRENT PATIENT -->
   <div id="currentPatient" class="glass p-6 rounded-xl mb-6 text-center">
-    <h2 class="text-gray-400">Current Patient</h2>
-    <p class="text-xl font-bold">No patient selected</p>
+  <div id="queueAvatars" class="flex gap-2 flex-wrap mt-4"></div>
+  <h2 class="text-gray-400 mb-2">Current Patient</h2>
+
+  <!-- Avatar -->
+  <div id="currentAvatar"
+       class="w-20 h-20 mx-auto rounded-full bg-blue-500 flex items-center justify-center text-2xl font-bold mb-3">
+    -
   </div>
+
+  <!-- Name -->
+  <p id="currentName" class="text-2xl font-bold text-blue-400">No Active Patient</p>
+
+  <!-- Issue -->
+  <p id="currentIssue" class="text-gray-400 mb-3">---</p>
+
+  <!-- Status -->
+  <span class="px-3 py-1 bg-blue-500 rounded-full text-sm">
+    In Consultation
+  </span>
+
+  <!-- DONE BUTTON -->
+  <button onclick="finishCurrentPatient()"
+    class="mt-4 bg-green-500 hover:bg-green-600 px-5 py-2 rounded-lg font-bold">
+    ✔ Done
+  </button>
+
+</div>
   <!-- 👇 ADD THIS ABOVE NEXT BUTTON -->
 <div id="avatarQueue" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
   <!-- NEXT BUTTON -->
@@ -226,6 +250,19 @@ function showTab(tab, e) {
   e.target.classList.add("active-tab");
 
   // ✅ Load data for charts
+  loadQueue();
+}
+async function finishCurrentPatient() {
+
+  let current = queue.find(p => p.status === "in_consultation");
+
+  if (!current) return;
+
+  await supabaseClient
+    .from('bookings')
+    .update({ status: "completed" })
+    .eq('id', current.id);
+
   loadQueue();
 }
 let performanceChart;
@@ -343,41 +380,44 @@ async function activateEmergency() {
 // Render Queue
 function renderQueue() {
 
- let waiting = queue.filter(p => p.status === "waiting");
-let inProgress = queue.filter(p => p.status === "in_consultation");
-let done = queue.filter(p => p.status === "completed");
-  // update counters
+  let waiting = queue.filter(p => p.status === "waiting");
+  let inProgress = queue.filter(p => p.status === "in_consultation");
+  let done = queue.filter(p => p.status === "done");
+
   document.getElementById("waitingCount").innerText = waiting.length;
   document.getElementById("currentCount").innerText = inProgress.length;
   document.getElementById("doneCount").innerText = done.length;
 
-  let current = queue.find(p => p.status === "in_consultation");
+  let current = inProgress[0];
 
-const box = document.getElementById("currentPatient");
+  // CURRENT PATIENT UI
+  if (current) {
+    document.getElementById("currentName").innerText = current.name;
+    document.getElementById("currentIssue").innerText = current.issue || "General";
 
-box.innerHTML = current
-  ? `
-    <h2 class="text-gray-400">Current Patient</h2>
+    document.getElementById("currentAvatar").innerText =
+      current.name.charAt(0).toUpperCase();
+  } else {
+    document.getElementById("currentName").innerText = "No Active Patient";
+    document.getElementById("currentIssue").innerText = "---";
+    document.getElementById("currentAvatar").innerText = "-";
+  }
 
-    <p class="text-3xl font-bold text-blue-400">
-      ${current.name}
-    </p>
+  // QUEUE AVATARS (NEW STYLE)
+  const queueBox = document.getElementById("queueAvatars");
 
-    <p class="text-gray-400">${current.issue || "General"}</p>
-
-    <span class="inline-block mt-2 px-3 py-1 bg-blue-500 rounded-full">
-      In Consultation
-    </span>
-  `
-  : `
-    <h2 class="text-gray-400">Current Patient</h2>
-    <p class="text-xl font-bold">No active patient</p>
-  `;
-
-  document.getElementById("totalPatients").innerText = queue.length;
-  renderAvatars();
-updateDutyEstimate();
-updateMiniChart();
+  if (queueBox) {
+    queueBox.innerHTML = queue.map((p, i) => `
+      <div class="w-10 h-10 rounded-full flex items-center justify-center
+        ${p.status === 'in_consultation'
+          ? 'bg-green-500 heartbeat'
+          : p.status === 'waiting'
+            ? 'bg-blue-500/40'
+            : 'bg-gray-500'}">
+        ${p.name.charAt(0).toUpperCase()}
+      </div>
+    `).join('');
+  }
 }
 function updateDutyEstimate() {
 
