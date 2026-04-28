@@ -154,7 +154,8 @@ body {
     <h2 class="text-gray-400">Current Patient</h2>
     <p class="text-xl font-bold">No patient selected</p>
   </div>
-
+  <!-- 👇 ADD THIS ABOVE NEXT BUTTON -->
+<div id="avatarQueue" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
   <!-- NEXT BUTTON -->
   <button onclick="nextPatient()"
     class="w-full bg-green-500 hover:bg-green-600 py-4 rounded-xl text-xl font-bold">
@@ -170,7 +171,10 @@ body {
     <canvas id="chart"></canvas>
   </div>
 </div>
-
+<div class="glass p-4 rounded-xl h-[200px]">
+  <h2 class="mb-2 text-sm">Queue Overview</h2>
+  <canvas id="miniChart"></canvas>
+</div>
 <!-- AI -->
 <!-- AI -->
 <div id="ai" class="p-6 hidden">
@@ -250,6 +254,26 @@ function updatePerformanceChart(data){
     options: {
       responsive: true,
       maintainAspectRatio: false
+    }
+  });
+}
+let miniChart;
+
+function updateMiniChart() {
+
+  let waiting = queue.filter(p => p.status === "waiting").length;
+  let inProg = queue.filter(p => p.status === "in_consultation").length;
+  let done = queue.filter(p => p.status === "completed").length;
+
+  if (miniChart) miniChart.destroy();
+
+  miniChart = new Chart(document.getElementById("miniChart"), {
+    type: 'doughnut',
+    data: {
+      labels: ['Waiting','Active','Done'],
+      datasets: [{
+        data: [waiting, inProg, done]
+      }]
     }
   });
 }
@@ -351,6 +375,35 @@ box.innerHTML = current
   `;
 
   document.getElementById("totalPatients").innerText = queue.length;
+  renderAvatars();
+updateDutyEstimate();
+updateMiniChart();
+}
+function updateDutyEstimate() {
+
+  let waiting = queue.filter(p => p.status === "waiting").length;
+
+  let avgTime = 15; // minutes per patient
+
+  let total = waiting * avgTime;
+
+  let hours = Math.floor(total / 60);
+  let mins = total % 60;
+
+  let text = `⏳ Estimated duty end: ${hours}h ${mins}m`;
+
+  let el = document.getElementById("dutyEstimate");
+
+  if (!el) {
+    let div = document.createElement("div");
+    div.id = "dutyEstimate";
+    div.className = "glass p-4 rounded-xl mb-4 text-yellow-300 font-bold";
+    div.innerText = text;
+
+    document.getElementById("queue").prepend(div);
+  } else {
+    el.innerText = text;
+  }
 }
 function animateNumber(id, target) {
   const el = document.getElementById(id);
@@ -638,7 +691,45 @@ new Chart(document.getElementById("chart"), {
     datasets:[{label:'Patients',data:[2,5,8,6,10]}]
   }
 });
+function renderAvatars() {
+  const container = document.getElementById("avatarQueue");
 
+  container.innerHTML = queue.map(p => {
+
+    let color =
+      p.status === "waiting" ? "bg-yellow-500" :
+      p.status === "in_consultation" ? "bg-blue-500" :
+      "bg-green-500";
+
+    return `
+  <div class="glass p-3 rounded-xl text-center">
+    <div class="w-10 h-10 mx-auto rounded-full ${color}"></div>
+
+    <p class="text-sm mt-2 font-bold">${p.name}</p>
+    <p class="text-xs text-gray-300">${p.status}</p>
+
+    ${p.status === "in_consultation" ? `
+      <button onclick="markDone('${p.id}')"
+        class="mt-2 px-2 py-1 bg-green-500 text-xs rounded">
+        DONE
+      </button>
+    ` : ""}
+  </div>
+`;
+  }).join("");
+}
+async function markDone(id) {
+
+  await supabaseClient
+    .from('bookings')
+    .update({
+      status: "completed",
+      ended_at: new Date()
+    })
+    .eq('id', id);
+
+  loadQueue();
+}
 
 // Logout
 function logout(){
