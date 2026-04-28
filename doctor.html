@@ -327,13 +327,11 @@ async function loadQueue() {
   }
 
   queue = data.map(b => ({
-    name: b.patient_name || "Patient",
-    issue: "General",
-    status: b.status === "waiting" ? "waiting" :
-        b.status === "in_consultation" ? "in_consultation" :
-        b.status === "completed" ? "done" : b.status,
-    id: b.id
-  }));
+  name: b.patient_name || "Patient",
+  issue: "General",
+  status: b.status,   // ❗ KEEP RAW VALUE (IMPORTANT FIX)
+  id: b.id
+}));
   console.log("Doctor ID:", doctorId);
 console.log("Bookings:", data);
 updateAICharts(data);
@@ -382,7 +380,10 @@ function renderQueue() {
 
   let waiting = queue.filter(p => p.status === "waiting");
   let inProgress = queue.filter(p => p.status === "in_consultation");
-  let done = queue.filter(p => p.status === "done");
+  let done = queue.filter(p => p.status === "completed");
+  // 👇 ADD THESE LINES
+document.getElementById("totalPatients").innerText = queue.length;
+document.getElementById("appointments").innerText = queue.length;
 
   document.getElementById("waitingCount").innerText = waiting.length;
   document.getElementById("currentCount").innerText = inProgress.length;
@@ -474,10 +475,9 @@ async function nextPatient() {
 
   // close current patient
   if (current) {
-    await supabaseClient
-      .from('bookings')
-      .update({ status: "Done" })
-      .eq('id', current.id);
+   await supabaseClient
+  .from('bookings')
+  .update({ status: "completed" })
   }
 
   // start next patient
