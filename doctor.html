@@ -13,6 +13,23 @@
 body {
   background: #0f172a;
 }
+.queue-card {
+  transition: 0.3s;
+}
+
+.queue-card:hover {
+  transform: scale(1.01);
+}
+
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
 .glass {
   background: rgba(255,255,255,0.08);
   backdrop-filter: blur(10px);
@@ -111,22 +128,39 @@ body {
 
 <!-- QUEUE -->
 <div id="queue" class="p-6 hidden">
-  <div class="glass p-6 rounded-xl overflow-x-auto">
-    <h2 class="mb-4 text-xl">Live Queue</h2>
 
-    <table class="w-full text-left">
-      <thead>
-        <tr class="border-b border-white/20">
-          <th>#</th>
-          <th>Name</th>
-          <th>Issue</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="queueTable"></tbody>
-    </table>
+  <!-- TOP STATS -->
+  <div class="grid grid-cols-3 gap-4 mb-6">
+
+    <div class="glass p-5 rounded-xl text-center">
+      <h2 class="text-gray-400 text-sm">Waiting</h2>
+      <p id="waitingCount" class="text-4xl font-bold text-yellow-400">0</p>
+    </div>
+
+    <div class="glass p-5 rounded-xl text-center">
+      <h2 class="text-gray-400 text-sm">In Consultation</h2>
+      <p id="currentCount" class="text-4xl font-bold text-blue-400">0</p>
+    </div>
+
+    <div class="glass p-5 rounded-xl text-center">
+      <h2 class="text-gray-400 text-sm">Completed</h2>
+      <p id="doneCount" class="text-4xl font-bold text-green-400">0</p>
+    </div>
+
   </div>
+
+  <!-- CURRENT PATIENT -->
+  <div id="currentPatient" class="glass p-6 rounded-xl mb-6 text-center">
+    <h2 class="text-gray-400">Current Patient</h2>
+    <p class="text-xl font-bold">No patient selected</p>
+  </div>
+
+  <!-- NEXT BUTTON -->
+  <button onclick="nextPatient()"
+    class="w-full bg-green-500 hover:bg-green-600 py-4 rounded-xl text-xl font-bold">
+    ▶ NEXT PATIENT
+  </button>
+
 </div>
 
 <!-- ANALYTICS -->
@@ -234,8 +268,9 @@ async function loadQueue() {
   queue = data.map(b => ({
     name: b.patient_name || "Patient",
     issue: "General",
-    status: b.status === "waiting" ? "Waiting" :
-            b.status === "in_consultation" ? "In Progress" : "Done",
+    status: b.status === "waiting" ? "waiting" :
+        b.status === "in_consultation" ? "in_consultation" :
+        b.status === "completed" ? "done" : b.status,
     id: b.id
   }));
   console.log("Doctor ID:", doctorId);
@@ -283,64 +318,84 @@ async function activateEmergency() {
 }
 // Render Queue
 function renderQueue() {
-  const table = document.getElementById("queueTable");
-  table.innerHTML = "";
 
-  // 🔹 Separate patients
-  let activePatients = queue.filter(p => p.status !== "Done");
-  let completedPatients = queue.filter(p => p.status === "Done");
+ let waiting = queue.filter(p => p.status === "waiting");
+let inProgress = queue.filter(p => p.status === "in_consultation");
+let done = queue.filter(p => p.status === "completed");
+  // update counters
+  document.getElementById("waitingCount").innerText = waiting.length;
+  document.getElementById("currentCount").innerText = inProgress.length;
+  document.getElementById("doneCount").innerText = done.length;
 
-  // 🔹 Render ACTIVE patients first
-  activePatients.forEach((p, i) => {
-    let color =
-      p.status==="Waiting" ? "bg-yellow-400 text-black" :
-      p.status==="In Progress" ? "bg-blue-500" :
-      "bg-green-500";
+  let current = queue.find(p => p.status === "in_consultation");
 
-    table.innerHTML += `
-      <tr class="border-b border-white/10 hover:bg-white/5">
-        <td>${i+1}</td>
-        <td>${p.name}</td>
-        <td>${p.issue}</td>
-        <td><span class="${color} px-2 py-1 rounded">${p.status}</span></td>
-        <td>
-          <button onclick="startPatient(${i})" class="bg-blue-500 px-2 py-1 rounded mr-2">Start</button>
-          <button onclick="markEmergency(${i})" class="bg-red-600 px-2 py-1 rounded mr-2">🚨 Emergency</button>
-          <button onclick="finishPatient(${i})" class="bg-green-500 px-2 py-1 rounded">Done</button>
-        </td>
-      </tr>
-    `;
-  });
+const box = document.getElementById("currentPatient");
 
-  // 🔻 Add COMPLETED SECTION HEADER
-  if (completedPatients.length > 0) {
-    table.innerHTML += `
-      <tr>
-        <td colspan="5" class="text-center text-green-400 font-bold py-3">
-          ✅ Completed Patients
-        </td>
-      </tr>
-    `;
+box.innerHTML = current
+  ? `
+    <h2 class="text-gray-400">Current Patient</h2>
+
+    <p class="text-3xl font-bold text-blue-400">
+      ${current.name}
+    </p>
+
+    <p class="text-gray-400">${current.issue || "General"}</p>
+
+    <span class="inline-block mt-2 px-3 py-1 bg-blue-500 rounded-full">
+      In Consultation
+    </span>
+  `
+  : `
+    <h2 class="text-gray-400">Current Patient</h2>
+    <p class="text-xl font-bold">No active patient</p>
+  `;
+
+  document.getElementById("totalPatients").innerText = queue.length;
+}
+function animateNumber(id, target) {
+  const el = document.getElementById(id);
+  let current = Number(el.innerText);
+
+  let step = () => {
+    if (current < target) {
+      current++;
+      el.innerText = current;
+      requestAnimationFrame(step);
+    } else if (current > target) {
+      current--;
+      el.innerText = current;
+      requestAnimationFrame(step);
+    }
+  };
+
+  step();
+}
+async function nextPatient() {
+  let waiting = queue.filter(p => p.status === "waiting");
+  let current = queue.find(p => p.status ==="in_consultation" );
+
+  if (!waiting.length) {
+    alert("No waiting patients");
+    return;
   }
 
-  // 🔹 Render COMPLETED patients at bottom
-  completedPatients.forEach((p, i) => {
-    table.innerHTML += `
-      <tr class="border-b border-white/10 opacity-70">
-        <td>-</td>
-        <td>${p.name}</td>
-        <td>${p.issue}</td>
-        <td><span class="bg-green-500 px-2 py-1 rounded">Done</span></td>
-        <td>✔ Completed</td>
-      </tr>
-    `;
-  });
+  // close current patient
+  if (current) {
+    await supabaseClient
+      .from('bookings')
+      .update({ status: "Done" })
+      .eq('id', current.id);
+  }
 
-  // 🔹 Update counts
-  document.getElementById("totalPatients").innerText = queue.length;
-  document.getElementById("appointments").innerText = queue.length;
-  document.getElementById("waitingCount").innerText =
-    queue.filter(p=>p.status==="Waiting").length;
+  // start next patient
+  let next = waiting[0];
+
+  await supabaseClient
+    .from('bookings')
+    .update({ status: "in_consultation"})
+    .eq('id', next.id);
+
+  loadQueue(); // refresh
 }
 let statusChart, timeChart;
 function updateAICharts(data){
@@ -599,9 +654,9 @@ supabaseClient
   }, payload => {
 
       if (Number(payload.new.doctor_id) == doctorId) {
-          notify();        // 🔔 show alert
-          loadQueue();     // refresh queue
-      }
+    notify();
+    setTimeout(loadQueue, 200); // small delay ensures DB sync
+}
 
   })
   .subscribe();
