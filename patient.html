@@ -522,8 +522,7 @@ function speak(message) {
 async function renderQueueStatus() {
 
     const patientName = localStorage.getItem("username");
-    localStorage.setItem("username", "testuser");
-localStorage.setItem("role", "patient");
+ 
     const { data, error } = await supabaseClient
         .from('bookings')
         .select('*')

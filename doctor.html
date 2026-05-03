@@ -82,7 +82,7 @@ body {
 
     <div class="glass p-5 rounded-xl bg-yellow-500/20">
       <h2>Waiting</h2>
-      <p id="waitingCount" class="text-3xl font-bold">0</p>
+      <p id="dashboardWaitingCount" class="text-3xl font-bold">0</p>
     </div>
 
     <div class="glass p-5 rounded-xl bg-red-500/20">
@@ -134,7 +134,7 @@ body {
 
     <div class="glass p-5 rounded-xl text-center">
       <h2 class="text-gray-400 text-sm">Waiting</h2>
-      <p id="waitingCount" class="text-4xl font-bold text-yellow-400">0</p>
+      <p id="queueWaitingCount" class="text-4xl font-bold text-yellow-400">0</p>
     </div>
 
     <div class="glass p-5 rounded-xl text-center">
@@ -230,6 +230,7 @@ body {
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 const doctorId = localStorage.getItem("doctor_id");
+let queue = [];
 // Role check
 if (localStorage.getItem("role") !== "doctor") {
   window.location.href = "index.html";
@@ -385,7 +386,8 @@ function renderQueue() {
 document.getElementById("totalPatients").innerText = queue.length;
 document.getElementById("appointments").innerText = queue.length;
 
-  document.getElementById("waitingCount").innerText = waiting.length;
+  document.getElementById("dashboardWaitingCount").innerText = waiting.length;
+document.getElementById("queueWaitingCount").innerText = waiting.length;
   document.getElementById("currentCount").innerText = inProgress.length;
   document.getElementById("doneCount").innerText = done.length;
 
@@ -475,10 +477,11 @@ async function nextPatient() {
 
   // close current patient
   if (current) {
-   await supabaseClient
-  .from('bookings')
-  .update({ status: "completed" })
-  }
+  await supabaseClient
+    .from('bookings')
+    .update({ status: "completed" })
+    .eq('id', current.id);
+}
 
   // start next patient
   let next = waiting[0];
