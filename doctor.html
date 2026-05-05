@@ -308,7 +308,7 @@ function updateMiniChart() {
   miniChart = new Chart(document.getElementById("miniChart"), {
     type: 'doughnut',
     data: {
-      labels: ['Waiting','Active','Done'],
+      labels: ['Waiting','in_consultation','Done'],
       datasets: [{
         data: [waiting, inProg, done]
       }]
@@ -340,13 +340,13 @@ updateAICharts(data);
 updateAISuggestions(data);
 updatePerformanceChart(data);
   // Ensure one patient is active
-if (!queue.some(p => p.status === "active")) {
+if (!queue.some(p => p.status === "in_consultation")) {
   const firstWaiting = queue.find(p => p.status === "waiting");
 
   if (firstWaiting) {
     await supabaseClient
       .from("bookings")
-      .update({ status: "active" })
+      .update({ status: "in_consultation" })
       .eq("id", firstWaiting.id);
 
     return loadQueue(); // reload after update

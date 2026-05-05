@@ -543,12 +543,19 @@ async function renderQueueStatus() {
 
     container.innerHTML = data.map(b => {
 
-        const ahead = b.queue_number - 1;
-        const total = ahead + 3;
+        // Create queue from current doctor bookings
+const doctorQueue = data
+    .filter(x => x.doctor_id === b.doctor_id)
+    .sort((a, b) => a.queue_number - b.queue_number);
+
+// Find position
+const index = doctorQueue.findIndex(x => x.id === b.id);
+const ahead = index;
+const total = doctorQueue.length;
         const progress = ((total - ahead) / total) * 100;
         const baseTime = 5; // normal patient time
 const emergencyBuffer = 10; // extra delay
-let waitTime = ahead * baseTime;
+let waitTime = index * baseTime;
 
 if (b.is_emergency) {
     waitTime += 10; // extra delay due to emergency
