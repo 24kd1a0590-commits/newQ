@@ -553,14 +553,23 @@ const index = doctorQueue.findIndex(x => x.id === b.id);
 const ahead = index;
 const total = doctorQueue.length;
         const progress = ((total - ahead) / total) * 100;
-        const baseTime = 5; // normal patient time
-const emergencyBuffer = 10; // extra delay
-let waitTime = index * baseTime;
+        let waitTime = 0;
 
-if (b.is_emergency) {
-    waitTime += 10; // extra delay due to emergency
+for (let i = 0; i < index; i++) {
+    const prev = doctorQueue[i];
+
+    let time = prev.actual_time || 5;
+
+    // smooth + cap (fixes huge jumps)
+    time = Math.min((time + 5) / 2, 10);
+
+    // smaller emergency impact
+    if (prev.is_emergency) {
+        time += 5;
+    }
+
+    waitTime += time;
 }
-        
 
         const arrivalTime = new Date(Date.now() + waitTime * 60000)
             .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
