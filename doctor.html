@@ -238,7 +238,7 @@ if (localStorage.getItem("role") !== "doctor") {
 
 // Welcome
 document.getElementById("welcome").innerText =
-  "Dr. " + localStorage.getItem("username");
+  localStorage.getItem("username");
 
 // Tabs
 function showTab(tab, e) {
@@ -333,11 +333,25 @@ async function loadQueue() {
   status: b.status,   // ❗ KEEP RAW VALUE (IMPORTANT FIX)
   id: b.id
 }));
+
   console.log("Doctor ID:", doctorId);
 console.log("Bookings:", data);
 updateAICharts(data);
 updateAISuggestions(data);
 updatePerformanceChart(data);
+  // Ensure one patient is active
+if (!queue.some(p => p.status === "active")) {
+  const firstWaiting = queue.find(p => p.status === "waiting");
+
+  if (firstWaiting) {
+    await supabaseClient
+      .from("bookings")
+      .update({ status: "active" })
+      .eq("id", firstWaiting.id);
+
+    return loadQueue(); // reload after update
+  }
+}
   renderQueue();
 }
 async function activateEmergency() {
