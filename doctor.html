@@ -195,10 +195,6 @@ body {
     <canvas id="chart"></canvas>
   </div>
 </div>
-<div class="glass p-4 rounded-xl h-[200px]">
-  <h2 class="mb-2 text-sm">Queue Overview</h2>
-  <canvas id="miniChart"></canvas>
-</div>
 <!-- AI -->
 <!-- AI -->
 <div id="ai" class="p-6 hidden">
@@ -253,6 +249,42 @@ function showTab(tab, e) {
   // ✅ Load data for charts
   loadQueue();
 }
+async function startConsultation(bookingId) {
+
+    const now = new Date();
+
+    // 🔹 close previous patient automatically
+    const { data: active } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('doctor_id', doctorId)
+        .eq('status', 'in_consultation')
+        .maybeSingle();
+
+    if (active) {
+        const start = new Date(active.started_at);
+        const duration = Math.floor((now - start) / 60000);
+
+        await supabaseClient
+            .from('bookings')
+            .update({
+                status: 'completed',
+                ended_at: now,
+                actual_time: duration
+            })
+            .eq('id', active.id);
+    }
+
+    // 🔹 start new patient
+    await supabaseClient
+        .from('bookings')
+        .update({
+            status: 'in_consultation',
+            started_at: now
+        })
+        .eq('id', bookingId);
+}
+console.log("Doctor ID from localStorage:", doctorId);
 async function finishCurrentPatient() {
 
   let current = queue.find(p => p.status === "in_consultation");
@@ -327,10 +359,10 @@ async function loadQueue() {
     return;
   }
 
-  queue = data.map(b => ({
+queue = data.map(b => ({
   name: b.patient_name || "Patient",
   issue: "General",
-  status: b.status,   // ❗ KEEP RAW VALUE (IMPORTANT FIX)
+  status: (b.status || "").trim().toLowerCase(),  // ✅ FIX
   id: b.id
 }));
 
@@ -340,19 +372,16 @@ updateAICharts(data);
 updateAISuggestions(data);
 updatePerformanceChart(data);
   // Ensure one patient is active
-if (!queue.some(p => p.status === "in_consultation")) {
+if (!queue.some(p => p.status === "in_consultation")){
   const firstWaiting = queue.find(p => p.status === "waiting");
 
   if (firstWaiting) {
-    await supabaseClient
-      .from("bookings")
-      .update({ status: "in_consultation" })
-      .eq("id", firstWaiting.id);
-
-    return loadQueue(); // reload after update
+    await startConsultation(firstWaiting.id);
+    return loadQueue();
   }
 }
   renderQueue();
+  console.log("Statuses:", queue.map(q => q.status));
 }
 async function activateEmergency() {
 
@@ -360,7 +389,7 @@ async function activateEmergency() {
   const { data, error } = await supabaseClient
     .from('bookings')
     .select('*')
-    .eq('doctor_id', doctorId)
+    .eq('doctor_id', Number(doctorId)) // 🔥 IMPORTANT
     .eq('status', 'waiting')
     .order('queue_number', { ascending: true })
     .limit(1);
@@ -393,9 +422,9 @@ async function activateEmergency() {
 // Render Queue
 function renderQueue() {
 
-  let waiting = queue.filter(p => p.status === "waiting");
-  let inProgress = queue.filter(p => p.status === "in_consultation");
-  let done = queue.filter(p => p.status === "completed");
+ let waiting = queue.filter(p => p.status === "waiting");
+let inProgress = queue.filter(p => p.status === "in_consultation");
+let done = queue.filter(p => p.status === "completed");
   // 👇 ADD THESE LINES
 document.getElementById("totalPatients").innerText = queue.length;
 document.getElementById("appointments").innerText = queue.length;
@@ -499,11 +528,7 @@ async function nextPatient() {
 
   // start next patient
   let next = waiting[0];
-
-  await supabaseClient
-    .from('bookings')
-    .update({ status: "in_consultation"})
-    .eq('id', next.id);
+  await startConsultation(next.id);
 
   loadQueue(); // refresh
 }
