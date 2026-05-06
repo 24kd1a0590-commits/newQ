@@ -123,8 +123,8 @@ body { font-family: 'Inter', sans-serif; }
                         </div>
                        <select id="locationFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
     <option class="text-black bg-white">Location (All)</option>
-    <option class="text-black bg-white">Downtown</option>
-    <option class="text-black bg-white">Suburbs</option>
+    <option class="text-black bg-white">Rural</option>
+    <option class="text-black bg-white">Urban</option>
 </select>
 
 <select id="ratingFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
@@ -361,6 +361,7 @@ async function init() {
         const { data, error } = await supabaseClient
             .from('doctors')
             .select('*');
+          
 
         if (error) throw error;
 
@@ -521,12 +522,20 @@ function speak(message) {
 }
 async function renderQueueStatus() {
 
-    const patientName = localStorage.getItem("username");
- 
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+        console.log("User not logged in");
+        return;
+    }
+
     const { data, error } = await supabaseClient
         .from('bookings')
         .select('*')
-        .eq('patient_name', patientName)
+        .eq('user_id', user.id)   // 🔥 only this is enough
+        .neq('status', 'cancelled')
+        .order('priority', { ascending: false })
+        .order('queue_number', { ascending: true })
         .neq('status', 'cancelled')
         .order('priority', { ascending: false })
         .order('queue_number', { ascending: true });
@@ -743,6 +752,12 @@ function showNextAlert() {
     setTimeout(() => div.remove(), 4000);
 }
 async function confirmBooking() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+if (!user) {
+    alert("User not logged in");
+    return;
+}
     if (!selectedDoctor) {
         alert("Select a doctor first");
         return;
@@ -778,6 +793,7 @@ const queueNumber = activeBookings.length + 1;
     doctor_id: selectedDoctor.id,
     doctor_name: selectedDoctor.name,
     patient_name: patientName,
+    user_id: user.id,
     date: "Today",
     time: selectedTime,
     status: "waiting",
@@ -812,11 +828,18 @@ function closeCompletionPopup() {
     document.getElementById('completion-popup').classList.add('hidden');
 }
 async function renderBookings() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+     if (!user) {
+        console.log("User not logged in");
+        return;   // 🔥 STOP execution
+    }
+
     const { data, error } = await supabaseClient
     .from('bookings')
     .select('*')
-    .neq('status', 'completed') 
-    .neq('status', 'cancelled')  // 🔥 THIS LINE ADDED
+    .eq('user_id', user.id)   // 🔥 ADD THIS
+    .neq('status', 'completed')
+    .neq('status', 'cancelled')
     .order('id', { ascending: false });
     if (error) {
         console.error(error);
