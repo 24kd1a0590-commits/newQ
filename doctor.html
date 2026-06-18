@@ -249,6 +249,28 @@ function showTab(tab, e) {
   // ✅ Load data for charts
   loadQueue();
 }
+async function checkAccess() {
+
+    const email = localStorage.getItem("email");
+
+    if (!email) {
+        window.location.href = "index.html";
+        return;
+    }
+
+    const { data } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+    if (!data) {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+}
+
+checkAccess();
 async function startConsultation(bookingId) {
 
     const now = new Date();

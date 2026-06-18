@@ -356,6 +356,28 @@ function selectProblem(specialization) {
 function playSound() {
     document.getElementById("notify-sound").play();
 }
+async function checkAccess() {
+
+    const email = localStorage.getItem("email");
+
+    if (!email) {
+        window.location.href = "index.html";
+        return;
+    }
+
+    const { data } = await supabaseClient
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+    if (!data) {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+}
+
+checkAccess();
 // 2. FETCH DATA FROM YOUR DATASET
 async function init() {
     try {
