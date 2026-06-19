@@ -954,6 +954,26 @@ async function loadAnalytics() {
     document.getElementById("totalPatients").innerText = total;
     document.getElementById("avgWait").innerText = avg.toFixed(1) + " mins";
 }
+async function checkProfile() {
+    const email = localStorage.getItem("email");
+
+    const { data } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+    if (!data) {
+        document.getElementById("profile-modal").classList.remove("hidden");
+    } else {
+        localStorage.setItem("username", data.name);
+    }
+}
+
+window.onload = () => {
+    init(); // your existing function
+    checkProfile();
+};
 async function cancelBooking(id) {
 
     const confirmCancel = confirm("Are you sure you want to cancel?");
@@ -1047,6 +1067,7 @@ supabaseClient
   .subscribe();
   
 window.onload = init;
+
     </script>
 </body>
 </html>

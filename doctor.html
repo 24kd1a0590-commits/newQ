@@ -249,28 +249,6 @@ function showTab(tab, e) {
   // ✅ Load data for charts
   loadQueue();
 }
-async function checkAccess() {
-
-    const email = localStorage.getItem("email");
-
-    if (!email) {
-        window.location.href = "index.html";
-        return;
-    }
-
-    const { data } = await supabaseClient
-        .from("users")
-        .select("*")
-        .eq("email", email)
-        .single();
-
-    if (!data) {
-        localStorage.clear();
-        window.location.href = "index.html";
-    }
-}
-
-checkAccess();
 async function startConsultation(bookingId) {
 
     const now = new Date();
@@ -384,8 +362,9 @@ async function loadQueue() {
 queue = data.map(b => ({
   name: b.patient_name || "Patient",
   issue: "General",
-  status: (b.status || "").trim().toLowerCase(),  // ✅ FIX
-  id: b.id
+  status: (b.status || "").trim().toLowerCase(),
+  id: b.id,
+  queue_number: b.queue_number
 }));
 
   console.log("Doctor ID:", doctorId);
@@ -394,14 +373,7 @@ updateAICharts(data);
 updateAISuggestions(data);
 updatePerformanceChart(data);
   // Ensure one patient is active
-if (!queue.some(p => p.status === "in_consultation")){
-  const firstWaiting = queue.find(p => p.status === "waiting");
 
-  if (firstWaiting) {
-    await startConsultation(firstWaiting.id);
-    return loadQueue();
-  }
-}
   renderQueue();
   console.log("Statuses:", queue.map(q => q.status));
 }
@@ -532,7 +504,9 @@ function animateNumber(id, target) {
   step();
 }
 async function nextPatient() {
-  let waiting = queue.filter(p => p.status === "waiting");
+  let waiting = queue
+    .filter(p => p.status === "waiting")
+    .sort((a,b)=>a.queue_number-b.queue_number);
   let current = queue.find(p => p.status ==="in_consultation" );
 
   if (!waiting.length) {
