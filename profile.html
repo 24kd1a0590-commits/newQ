@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complete Profile | MEDIQ</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  font-family: Arial, sans-serif;
+}
+
+.glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen text-white">
+
+<!-- PROFILE CARD -->
+<div class="glass w-full max-w-md p-8 rounded-2xl shadow-2xl fade-in">
+
+    <h1 class="text-3xl font-bold text-center mb-2">Complete Your Profile</h1>
+    <p class="text-center text-gray-300 mb-6">Help us personalize MEDIQ for you</p>
+
+    <!-- Name -->
+    <label class="text-sm">Full Name</label>
+    <input id="name" type="text"
+        class="w-full p-3 mt-1 mb-4 rounded bg-white/10 border border-white/20 outline-none"
+        placeholder="Enter your name">
+
+    <!-- Age -->
+    <label class="text-sm">Age</label>
+    <input id="age" type="number"
+        class="w-full p-3 mt-1 mb-4 rounded bg-white/10 border border-white/20 outline-none"
+        placeholder="Enter your age">
+
+    <!-- Gender -->
+    <label class="text-sm">Gender</label>
+    <select id="gender"
+        class="w-full p-3 mt-1 mb-4 rounded bg-white/10 border border-white/20">
+        <option class="text-black">Male</option>
+        <option class="text-black">Female</option>
+        <option class="text-black">Other</option>
+    </select>
+
+    <!-- Phone -->
+    <label class="text-sm">Phone Number</label>
+    <input id="phone" type="text"
+        class="w-full p-3 mt-1 mb-6 rounded bg-white/10 border border-white/20"
+        placeholder="10-digit number">
+
+    <!-- Button -->
+    <button onclick="saveProfile()"
+        class="w-full bg-blue-500 hover:bg-blue-600 py-3 rounded-lg font-bold transition">
+        Save & Continue
+    </button>
+
+    <!-- Loading -->
+    <p id="status" class="text-center mt-4 text-sm text-gray-300"></p>
+
+</div>
+
+<script>
+const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
+const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function saveProfile() {
+
+    const name = document.getElementById("name").value.trim();
+    const age = document.getElementById("age").value.trim();
+    const gender = document.getElementById("gender").value;
+    const phone = document.getElementById("phone").value.trim();
+    const email = localStorage.getItem("temp_email");
+    const role = localStorage.getItem("role");
+
+    const status = document.getElementById("status");
+
+    // VALIDATION
+    if (!name || !age || !phone) {
+        status.innerText = "⚠️ Please fill all fields";
+        return;
+    }
+
+    if (phone.length !== 10) {
+        status.innerText = "⚠️ Enter valid 10-digit phone number";
+        return;
+    }
+
+    status.innerText = "Saving profile... ⏳";
+
+    const { error } = await supabaseClient
+        .from("profiles")
+        .insert([{
+            email,
+            name,
+            age: parseInt(age),
+            gender,
+            phone,
+            role
+        }]);
+
+    if (error) {
+        status.innerText = "❌ " + error.message;
+        return;
+    }
+
+    status.innerText = "✅ Profile created successfully!";
+
+    localStorage.removeItem("temp_email");
+    localStorage.setItem("username", name);
+
+    setTimeout(() => {
+        window.location.href =
+            role === "doctor" ? "doctor.html" : "patient.html";
+    }, 1500);
+}
+</script>
+
+</body>
+</html>
