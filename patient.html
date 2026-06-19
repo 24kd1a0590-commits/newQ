@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,9 +65,9 @@ body { font-family: 'Inter', sans-serif; }
 </style>
 </head>
 <body class="bg-[#0f172a] text-white">
+
 <audio id="notify-sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
     <div class="flex h-screen overflow-hidden">
-        
         <aside class="w-64 glass border-r border-gray-200 flex flex-col hidden md:flex">
             <div class="p-6">
                 <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -106,13 +104,23 @@ body { font-family: 'Inter', sans-serif; }
         </aside>
 <main class="flex-1 flex flex-col min-w-0 bg-transparent">
             
-            <header class="h-16 glass border-b border-gray-200 flex items-center px-8 sticky top-0 z-10">
-                <div class="relative w-full max-w-xl">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                    <input id="searchInput" type="text" placeholder="Search doctors, specialties, or clinics..." 
-                        class="w-full pl-10 pr-4 py-2 bg-white/10 text-white placeholder-gray-400 border-none rounded-full focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                </div>
-            </header>
+        <header class="h-16 glass border-b border-gray-200 flex items-center px-8 sticky top-0 z-10 justify-between">
+
+    <!-- Search -->
+    <div class="relative w-full max-w-xl">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+        <input id="searchInput" type="text"
+            placeholder="Search doctors, specialties, or clinics..."
+            class="w-full pl-10 pr-4 py-2 bg-white/10 text-white placeholder-gray-400 border-none rounded-full focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+    </div>
+
+    <!-- Logout -->
+    <button onclick="logout()"
+        class="ml-4 bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition whitespace-nowrap">
+        Logout
+    </button>
+
+</header>
 
             <div class="flex-1 flex overflow-hidden">
                 
@@ -988,6 +996,10 @@ async function cancelBooking(id) {
     smartNotify("Booking cancelled successfully", "warning");
     renderBookings();
     renderQueueStatus();
+}
+function logout(){
+  localStorage.clear();
+  window.location.href="index.html";
 }
 function smartNotify(message, type="info") {
 
