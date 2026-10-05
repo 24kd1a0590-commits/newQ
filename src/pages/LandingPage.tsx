@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Activity,
   ArrowRight,
-  Clock,
+  Clock3,
   Users,
   Building2,
   Bell,
@@ -19,6 +19,8 @@ import {
   CalendarCheck,
   Smartphone,
   ChevronRight,
+  HeartPulse,
+  Navigation,
 } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 import { Button } from '../components/ui/Button';
@@ -26,13 +28,15 @@ import { CrowdBadge } from '../components/ui/CrowdBadge';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { DEMO_PREVIEW_FLAG_TEXT } from '../constants/mockData';
+import { MediqAvatar } from '../components/assistant/MediqAvatar';
+import { CrowdVisualization } from '../components/crowd/CrowdVisualization';
 
 export const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8F5EF] text-[#252525] flex flex-col selection:bg-[#2B4C3F] selection:text-white">
       <Navbar />
 
-      {/* HERO SECTION — EDITORIAL ASYMMETRICAL COMPOSITION */}
+      {/* 1. HERO SECTION — HIGH IMPACT VISUAL COMPOSITION */}
       <section className="relative pt-12 pb-20 lg:pt-16 lg:pb-28 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
@@ -45,7 +49,7 @@ export const LandingPage: React.FC = () => {
               className="lg:col-span-6 space-y-6"
             >
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EAF2EC] border border-[#C8DDD0] text-[#2A543B] text-xs font-bold tracking-wide">
-                <Sparkles className="w-3.5 h-3.5 text-[#4A7C59]" />
+                <Sparkles className="w-3.5 h-3.5 text-[#2B4C3F]" />
                 <span>Smart Hospital Crowd Intelligence Platform</span>
               </div>
 
@@ -58,18 +62,27 @@ export const LandingPage: React.FC = () => {
               </div>
 
               <p className="text-base sm:text-lg text-[#5C5852] leading-relaxed max-w-xl">
-                MEDIQ monitors hospital department crowds and converts live activity telemetry into clear waiting time visibility. Know the queue conditions before stepping out of your home.
+                See hospital crowd levels, understand waiting times, and choose a better time to visit. MEDIQ turns live department activity telemetry into clear queue visibility.
               </p>
+
+              {/* MEDIQ Assistant Callout */}
+              <div className="p-4 bg-white rounded-2xl border border-[#C8DDD0] flex items-center gap-4 shadow-sm">
+                <MediqAvatar state="idle" size="sm" showBadge={false} />
+                <div className="text-xs">
+                  <strong className="text-[#252525] font-extrabold block">Meet your MEDIQ Assistant</strong>
+                  <span className="text-[#5C5852]">"Ask me anytime about nearby low-crowd OPD slots."</span>
+                </div>
+              </div>
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <Link to={ROUTES.PATIENT.HOSPITALS}>
                   <Button size="lg" variant="primary" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                    Find a Hospital
+                    Check Hospital Crowd
                   </Button>
                 </Link>
-                <Link to={ROUTES.HOSPITAL.CROWD}>
-                  <Button size="lg" variant="secondary" leftIcon={<Building2 className="w-4 h-4 text-[#2B4C3F]" />}>
-                    Hospital Staff Console
+                <Link to={ROUTES.PATIENT.DASHBOARD}>
+                  <Button size="lg" variant="secondary" leftIcon={<Sparkles className="w-4 h-4 text-[#2B4C3F]" />}>
+                    Explore MEDIQ
                   </Button>
                 </Link>
               </div>
@@ -87,101 +100,84 @@ export const LandingPage: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* Right Column: Believable Hospital Crowd Intelligence Visualization */}
+            {/* Right Column: Hero Visual with Real Hospital Photo + Telemetry Card Overlay */}
             <motion.div
               initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="lg:col-span-6"
+              className="lg:col-span-6 relative"
             >
-              <div className="mediq-card bg-white border border-[#E8E2D5] p-6 sm:p-8 shadow-xl rounded-3xl relative">
-                {/* Header Tag */}
-                <div className="flex items-center justify-between gap-2 pb-4 mb-6 border-b border-[#E8E2D5]">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#E9826E] animate-pulse" />
-                    <span className="text-xs font-bold text-[#8C867D] uppercase tracking-wider">Live Activity Telemetry</span>
+              <div className="mediq-card bg-white border border-[#E8E2D5] p-4 sm:p-6 shadow-2xl rounded-3xl relative overflow-hidden space-y-4">
+                
+                {/* Hero Photo Image */}
+                <div className="relative h-56 sm:h-64 rounded-2xl overflow-hidden border border-[#E8E2D5] bg-[#EFEBE1]">
+                  <img
+                    src="/images/hero_hospital.jpg"
+                    alt="The Willows Healthcare Center"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#252525]/80 via-transparent to-transparent" />
+                  
+                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                    <span className="px-3 py-1 rounded-full bg-white/90 text-[#2B4C3F] text-xs font-bold shadow-xs backdrop-blur-md">
+                      2.4 km away
+                    </span>
+                    <CrowdBadge level="HIGH" size="md" />
                   </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#F3EFE6] text-[#5C5852]">
-                    Preview Data
-                  </span>
-                </div>
 
-                {/* Facility & Department Details */}
-                <div className="flex items-start justify-between gap-4 mb-6">
-                  <div>
-                    <span className="text-xs font-semibold text-[#5C5852] uppercase tracking-wide">Facility & Department</span>
-                    <h3 className="text-2xl font-extrabold text-[#252525]">CityCare Hospital</h3>
-                    <p className="text-xs text-[#5C5852] flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#8C867D]" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white z-10 space-y-0.5">
+                    <h3 className="text-xl font-extrabold">CityCare Hospital</h3>
+                    <p className="text-xs text-white/90 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-[#EAF2EC]" />
                       General OPD • Metropolis District
                     </p>
                   </div>
-                  <CrowdBadge level="HIGH" size="md" />
                 </div>
 
-                {/* Metrics Card Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  {/* Metric 1: Patients */}
-                  <div className="p-4 rounded-2xl bg-[#FAECE8] border border-[#F2C4BA] space-y-1">
-                    <span className="text-xs text-[#8C301E] font-medium block">Current Department Load</span>
-                    <div className="text-3xl font-black text-[#8C301E] flex items-baseline gap-1">
-                      <span>82</span>
-                      <span className="text-sm font-semibold text-[#8C301E]/70">/ 100 capacity</span>
-                    </div>
-                    <div className="w-full bg-[#F2C4BA] rounded-full h-1.5 mt-2 overflow-hidden">
-                      <div className="bg-[#E9826E] h-1.5 rounded-full" style={{ width: '82%' }} />
-                    </div>
+                {/* Telemetry Gauge Box */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3.5 rounded-2xl bg-[#FAECE8] border border-[#F2C4BA] space-y-1">
+                    <span className="text-[11px] text-[#8C301E] font-medium block">Current Crowd</span>
+                    <div className="text-2xl font-black text-[#8C301E]">82 / 100</div>
+                    <span className="text-[10px] text-[#8C301E]/80 block">General OPD Load</span>
                   </div>
 
-                  {/* Metric 2: Estimated Wait */}
-                  <div className="p-4 rounded-2xl bg-[#FDF7E7] border border-[#F5E3B3] space-y-1">
-                    <span className="text-xs text-[#705008] font-medium block">Estimated Wait Time</span>
-                    <div className="text-3xl font-black text-[#705008] flex items-baseline gap-1">
-                      <span>45</span>
-                      <span className="text-sm font-semibold text-[#705008]/70">min</span>
-                    </div>
-                    <span className="text-[10px] text-[#705008]/80 block mt-2">Updated 2 minutes ago</span>
+                  <div className="p-3.5 rounded-2xl bg-[#FDF7E7] border border-[#F5E3B3] space-y-1">
+                    <span className="text-[11px] text-[#705008] font-medium block">Estimated Wait</span>
+                    <div className="text-2xl font-black text-[#705008]">~45 min</div>
+                    <span className="text-[10px] text-[#705008]/80 block">Updated 2 min ago</span>
                   </div>
                 </div>
 
-                {/* Recommendation Box */}
-                <div className="p-4 rounded-2xl bg-[#FAF3F1] border border-[#F2C4BA] flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-[#E9826E] shrink-0 mt-0.5" />
-                  <div className="text-xs space-y-0.5">
-                    <h4 className="font-bold text-[#8C301E]">Patient Guidance Recommendation</h4>
-                    <p className="text-[#5C5852] leading-relaxed">
-                      "Consider visiting after 5:00 PM." — OPD volume currently peak. Off-peak visiting hours reduce expected wait to under 12 minutes.
-                    </p>
-                  </div>
+                {/* Advice Footnote */}
+                <div className="p-3.5 rounded-2xl bg-[#F8F5EF] border border-[#E8E2D5] flex items-center gap-3 text-xs text-[#5C5852]">
+                  <AlertCircle className="w-4 h-4 text-[#E9826E] shrink-0" />
+                  <span>"MEDIQ recommends visiting after 5:00 PM for minimal wait."</span>
                 </div>
 
-                {/* Disclaimer Footnote */}
-                <p className="text-[11px] text-[#8C867D] mt-4 text-center">
-                  {DEMO_PREVIEW_FLAG_TEXT}
-                </p>
               </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* HUMAN-CENTERED VISUAL STORY SECTION — BEFORE vs WITH MEDIQ */}
+      {/* 2. HUMAN STORYTELLING SECTION — BEFORE vs WITH MEDIQ (Requirement #16) */}
       <section className="py-20 bg-[#EFEBE1]/60 border-y border-[#E8E2D5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2B4C3F]">The Patient Experience Transformation</span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-[#2B4C3F]">Human Storytelling</span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#252525] tracking-tight">
-              Ignorance of crowd conditions creates unpredictable waiting
+              Transforming the Patient Healthcare Journey
             </h2>
             <p className="text-sm text-[#5C5852] leading-relaxed">
-              MEDIQ replaces blind hospital travel with clear, predictive transparency before arrival.
+              Ignorance of crowd conditions creates unpredictable waiting. MEDIQ empowers patients with pre-visit crowd visibility.
             </p>
           </div>
 
-          {/* Visual Journey Transformation Grid */}
+          {/* Visual Journey Side-by-Side Comparison */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            {/* BEFORE MEDIQ Journey */}
+            {/* BEFORE MEDIQ */}
             <div className="mediq-card bg-white border-[#F2C4BA] p-8 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-[#F2C4BA]">
                 <div className="flex items-center gap-3">
@@ -189,7 +185,7 @@ export const LandingPage: React.FC = () => {
                     <XCircle className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[#252525]">Before MEDIQ</h3>
+                    <h3 className="text-lg font-bold text-[#252525]">Without MEDIQ</h3>
                     <p className="text-xs text-[#8C301E]">Unpredictable Traditional Hospital Visit</p>
                   </div>
                 </div>
@@ -198,43 +194,43 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Journey Steps */}
+              {/* Steps */}
               <div className="space-y-4">
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#E8E2D5] text-[#252525] flex items-center justify-center font-bold shrink-0">1</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#E8E2D5] text-[#252525] flex items-center justify-center font-bold shrink-0">1</span>
                   <div>
-                    <p className="font-bold text-[#252525]">Patient Leaves Home Blindly</p>
-                    <p className="text-[#5C5852] mt-0.5">Decides to travel to the hospital without knowing current department crowd.</p>
+                    <p className="font-extrabold text-[#252525]">Home</p>
+                    <p className="text-[#5C5852] mt-0.5">Patient leaves home without knowing current department crowd.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#E8E2D5] text-[#252525] flex items-center justify-center font-bold shrink-0">2</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#E8E2D5] text-[#252525] flex items-center justify-center font-bold shrink-0">2</span>
                   <div>
-                    <p className="font-bold text-[#252525]">Travels in Traffic</p>
-                    <p className="text-[#5C5852] mt-0.5">Spends 30–45 minutes commuting across the city.</p>
+                    <p className="font-extrabold text-[#252525]">Travel</p>
+                    <p className="text-[#5C5852] mt-0.5">Spends 30–45 minutes commuting across traffic.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#FAECE8] border border-[#F2C4BA] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#E9826E] text-white flex items-center justify-center font-bold shrink-0">3</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAECE8] border border-[#F2C4BA] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#E9826E] text-white flex items-center justify-center font-bold shrink-0">3</span>
                   <div>
-                    <p className="font-bold text-[#8C301E]">Finds Overcrowded OPD Room</p>
+                    <p className="font-extrabold text-[#8C301E]">Reach Hospital & Discover Crowd</p>
                     <p className="text-[#8C301E] mt-0.5">Discovers 80+ patients waiting. Waiting time exceeds 90 minutes.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#FAECE8] border border-[#F2C4BA] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#E9826E] text-white flex items-center justify-center font-bold shrink-0">4</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAECE8] border border-[#F2C4BA] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#E9826E] text-white flex items-center justify-center font-bold shrink-0">4</span>
                   <div>
-                    <p className="font-bold text-[#8C301E]">Waits Unexpectedly for Hours</p>
-                    <p className="text-[#8C301E] mt-0.5">Frustrated patient forced to sit in congested waiting hall.</p>
+                    <p className="font-extrabold text-[#8C301E]">Long Unexpected Waiting</p>
+                    <p className="text-[#8C301E] mt-0.5">Frustrated patient sits in congested, stressful waiting hall.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* WITH MEDIQ Journey */}
+            {/* WITH MEDIQ */}
             <div className="mediq-card bg-white border-[#C8DDD0] p-8 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-[#C8DDD0]">
                 <div className="flex items-center gap-3">
@@ -243,45 +239,45 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-[#252525]">With MEDIQ</h3>
-                    <p className="text-xs text-[#2A543B]">Empowered & Informed Patient Visit</p>
+                    <p className="text-xs text-[#2A543B]">Empowered & Informed Patient Care</p>
                   </div>
                 </div>
                 <span className="text-xs px-3 py-1 rounded-full bg-[#EAF2EC] text-[#2A543B] font-bold border border-[#C8DDD0]">
-                  Zero Surprise
+                  Zero Surprises
                 </span>
               </div>
 
-              {/* Journey Steps */}
+              {/* Steps */}
               <div className="space-y-4">
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#2B4C3F] text-white flex items-center justify-center font-bold shrink-0">1</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#2B4C3F] text-white flex items-center justify-center font-bold shrink-0">1</span>
                   <div>
-                    <p className="font-bold text-[#252525]">Checks MEDIQ at Home</p>
-                    <p className="text-[#5C5852] mt-0.5">Opens MEDIQ app before leaving. Views live crowd telemetry.</p>
+                    <p className="font-extrabold text-[#252525]">Check MEDIQ</p>
+                    <p className="text-[#5C5852] mt-0.5">Opens MEDIQ app before leaving home. Views live queue telemetry.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#2B4C3F] text-white flex items-center justify-center font-bold shrink-0">2</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#F8F5EF] border border-[#E8E2D5] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#2B4C3F] text-white flex items-center justify-center font-bold shrink-0">2</span>
                   <div>
-                    <p className="font-bold text-[#252525]">Sees Crowd Status & Guidance</p>
-                    <p className="text-[#5C5852] mt-0.5">App flags "Busy right now (45 min wait). Consider visiting after 5:00 PM."</p>
+                    <p className="font-extrabold text-[#252525]">See Crowd & Understand Wait Time</p>
+                    <p className="text-[#5C5852] mt-0.5">App indicates high crowd now (~45 min wait), recommends visiting after 5 PM.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#EAF2EC] border border-[#C8DDD0] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#4A7C59] text-white flex items-center justify-center font-bold shrink-0">3</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#EAF2EC] border border-[#C8DDD0] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#4A7C59] text-white flex items-center justify-center font-bold shrink-0">3</span>
                   <div>
-                    <p className="font-bold text-[#2A543B]">Chooses Better Visiting Time</p>
-                    <p className="text-[#2A543B] mt-0.5">Books token for off-peak hours or selects alternate low-crowd facility.</p>
+                    <p className="font-extrabold text-[#2A543B]">Choose Better Time or Facility</p>
+                    <p className="text-[#2A543B] mt-0.5">Reserves off-peak token or selects nearby low-crowd clinic.</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[#EAF2EC] border border-[#C8DDD0] text-xs">
-                  <span className="w-6 h-6 rounded-full bg-[#4A7C59] text-white flex items-center justify-center font-bold shrink-0">4</span>
+                <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-[#EAF2EC] border border-[#C8DDD0] text-xs">
+                  <span className="w-7 h-7 rounded-full bg-[#4A7C59] text-white flex items-center justify-center font-bold shrink-0">4</span>
                   <div>
-                    <p className="font-bold text-[#2A543B]">Fast & Peaceful Visit</p>
-                    <p className="text-[#2A543B] mt-0.5">Arrives right on schedule. Minimal waiting time before consultation.</p>
+                    <p className="font-extrabold text-[#2A543B]">Reach Hospital with Confidence</p>
+                    <p className="text-[#2A543B] mt-0.5">Arrives right on time. Consultation happens with minimal wait.</p>
                   </div>
                 </div>
               </div>
@@ -291,97 +287,54 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ELEGANT CROWD STATUS DESIGN SHOWCASE */}
+      {/* 3. HEALTHCARE PHOTOGRAPHY SHOWCASE */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#2B4C3F]">Semantic Status Standards</span>
-          <h2 className="text-3xl font-extrabold text-[#252525]">Clear Semantic Crowd Language</h2>
+          <span className="text-xs font-extrabold uppercase tracking-wider text-[#2B4C3F]">Human-Centered Care</span>
+          <h2 className="text-3xl font-extrabold text-[#252525]">Designed for Patients & Families</h2>
           <p className="text-sm text-[#5C5852]">
-            MEDIQ uses accessible, human-readable status levels combining text, icons, and contextual recommendations.
+            Warm, reassuring healthcare environments designed to reduce anxiety and streamline hospital visits.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* LOW CROWD */}
-          <div className="mediq-card bg-[#F2F7F4] border-[#C8DDD0] p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-[#2A543B] tracking-wider">Level 1</span>
-              <CrowdBadge level="LOW" size="sm" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <div className="mediq-card bg-white border border-[#E8E2D5] rounded-3xl overflow-hidden shadow-xs space-y-4 p-4">
+            <div className="h-48 rounded-2xl overflow-hidden bg-[#EFEBE1]">
+              <img src="/images/waiting_room.jpg" alt="Peaceful Waiting Area" className="w-full h-full object-cover" />
             </div>
-            <h3 className="text-xl font-bold text-[#2A543B]">"Quiet right now"</h3>
-            <p className="text-xs text-[#5C5852] leading-relaxed">
-              Minimal queue velocity. Short waiting time expected. Optimal window to visit hospital.
-            </p>
-          </div>
-
-          {/* MODERATE CROWD */}
-          <div className="mediq-card bg-[#FCF9F0] border-[#F5E3B3] p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-[#705008] tracking-wider">Level 2</span>
-              <CrowdBadge level="MODERATE" size="sm" />
-            </div>
-            <h3 className="text-xl font-bold text-[#705008]">"Moderate activity"</h3>
-            <p className="text-xs text-[#5C5852] leading-relaxed">
-              Steady patient inflow. Standard waiting times apply. Booking queue token recommended.
-            </p>
-          </div>
-
-          {/* HIGH CROWD */}
-          <div className="mediq-card bg-[#FAF3F1] border-[#F2C4BA] p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-[#8C301E] tracking-wider">Level 3</span>
-              <CrowdBadge level="HIGH" size="sm" />
-            </div>
-            <h3 className="text-xl font-bold text-[#8C301E]">"Busy right now"</h3>
-            <p className="text-xs text-[#5C5852] leading-relaxed">
-              Heavy patient volume. Extended delay expected. Off-peak visiting hours recommended.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* PLATFORM CAPABILITIES GRID */}
-      <section className="py-20 bg-[#EFEBE1]/40 border-t border-[#E8E2D5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#2B4C3F]">Platform Capabilities</h2>
-            <h3 className="text-3xl font-extrabold text-[#252525]">Built for Patients and Hospital Operations</h3>
-            <p className="text-sm text-[#5C5852]">
-              Powered by real-time activity telemetry and Supabase PostgreSQL infrastructure.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="mediq-card bg-white p-6 border-[#E8E2D5] space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#EAF2EC] text-[#2A543B] flex items-center justify-center font-bold">
-                <Eye className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-bold text-[#252525]">Pre-Visit Visibility</h4>
+            <div className="space-y-1 p-2">
+              <h3 className="text-lg font-extrabold text-[#252525]">Peaceful Waiting Halls</h3>
               <p className="text-xs text-[#5C5852] leading-relaxed">
-                Inspect department patient volume and estimated consultation wait before leaving home.
-              </p>
-            </div>
-
-            <div className="mediq-card bg-white p-6 border-[#E8E2D5] space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#F0EDF7] text-[#45376B] flex items-center justify-center font-bold">
-                <Bell className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-bold text-[#252525]">Surge Notifications</h4>
-              <p className="text-xs text-[#5C5852] leading-relaxed">
-                Receive proactive alerts when crowd levels spike or when waiting times drop significantly.
-              </p>
-            </div>
-
-            <div className="mediq-card bg-white p-6 border-[#E8E2D5] space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#FDF7E7] text-[#705008] flex items-center justify-center font-bold">
-                <Sliders className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-bold text-[#252525]">Staff Telemetry Publisher</h4>
-              <p className="text-xs text-[#5C5852] leading-relaxed">
-                Hospital staff can update crowd metrics, manage capacity thresholds, and balance patient load.
+                By spreading patient traffic evenly across hours, waiting areas stay calm and un-congested.
               </p>
             </div>
           </div>
+
+          <div className="mediq-card bg-white border border-[#E8E2D5] rounded-3xl overflow-hidden shadow-xs space-y-4 p-4">
+            <div className="h-48 rounded-2xl overflow-hidden bg-[#EFEBE1]">
+              <img src="/images/doctor_consultation.jpg" alt="Doctor Consultation" className="w-full h-full object-cover" />
+            </div>
+            <div className="space-y-1 p-2">
+              <h3 className="text-lg font-extrabold text-[#252525]">Quality Consultation Time</h3>
+              <p className="text-xs text-[#5C5852] leading-relaxed">
+                Doctors give focused attention when department surges are managed proactively.
+              </p>
+            </div>
+          </div>
+
+          <div className="mediq-card bg-white border border-[#E8E2D5] rounded-3xl overflow-hidden shadow-xs space-y-4 p-4">
+            <div className="h-48 rounded-2xl overflow-hidden bg-[#EFEBE1]">
+              <img src="/images/patient_family.jpg" alt="Patient Family Support" className="w-full h-full object-cover" />
+            </div>
+            <div className="space-y-1 p-2">
+              <h3 className="text-lg font-extrabold text-[#252525]">Support for Families & Elderly</h3>
+              <p className="text-xs text-[#5C5852] leading-relaxed">
+                Elderly patients and accompanying families avoid exhausting 2-hour waits in crowded hallways.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 
