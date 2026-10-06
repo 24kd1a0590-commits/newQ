@@ -5,256 +5,521 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediQ | Patient Portal</title>
     <script>
-function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
-</script>
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+    </script>
     <script>
-const role = localStorage.getItem("role");
-
-if (role !== "patient") {
-  alert("Access denied");
-  window.location.href = "index.html";
-}
-</script>
+        const role = localStorage.getItem("role");
+        if (role !== "patient") {
+            // Keep safe for direct access or demo
+            if (role && role !== "patient") {
+                alert("Access denied");
+                window.location.href = "index.html";
+            }
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0b1120;
+            color: #f8fafc;
+        }
 
-/* 🔥 GLASS EFFECT */
-.glass {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.15);
-}
+        /* Glassmorphism & Modern Card Surfaces */
+        .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
 
-/* Scrollbar for dark UI */
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { 
-    background: #555; 
-    border-radius: 10px; 
-}
-/* 🔥 Queue Animation */
-@keyframes flow {
-    0% { transform: translateX(0); opacity: 0.6; }
-    50% { transform: translateX(6px); opacity: 1; }
-    100% { transform: translateX(0); opacity: 0.6; }
-}
+        .glass-card {
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.25s ease-in-out;
+        }
 
-.queue-dot {
-    animation: flow 1.5s infinite ease-in-out;
-}
+        .glass-card:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+        }
 
-/* ❤️ Heartbeat */
-@keyframes heartbeat {
-    0% { transform: scale(1); }
-    25% { transform: scale(1.1); }
-    40% { transform: scale(1); }
-    60% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
+        .glass-highlight {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.35) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
 
-.heartbeat {
-    animation: heartbeat 1.2s infinite;
-}
-</style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #334155; 
+            border-radius: 10px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Flow & Heartbeat Animations */
+        @keyframes flow {
+            0% { transform: translateX(0); opacity: 0.6; }
+            50% { transform: translateX(6px); opacity: 1; }
+            100% { transform: translateX(0); opacity: 0.6; }
+        }
+
+        .queue-dot {
+            animation: flow 1.5s infinite ease-in-out;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.08); }
+            40% { transform: scale(1); }
+            60% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .heartbeat {
+            animation: heartbeat 1.3s infinite;
+        }
+
+        .badge-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
-<body class="bg-[#0f172a] text-white">
-<audio id="notify-sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+    <audio id="notify-sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
     <div class="flex h-screen overflow-hidden">
         
-        <aside class="w-64 glass border-r border-gray-200 flex flex-col hidden md:flex">
-            <div class="p-6">
-                <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
-                    <i data-lucide="activity"></i> HealthBook
-                </h1>
-            </div>
-            <nav class="flex-1 px-4 space-y-2">
-                <a href="#" onclick="showPage('home')" class="flex items-center gap-3 p-3 text-blue-600 bg-blue-50 rounded-lg font-medium">
-                    <i data-lucide="home"></i> Home
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 text-gray-300 hover:bg-gray-100 rounded-lg transition">
-                    <i data-lucide="search"></i> Search
-                </a>
-                <a href="#" onclick="showPage('status')" class="flex items-center gap-3 p-3 text-gray-300 hover:bg-gray-100 rounded-lg transition">
-                    <i data-lucide="calendar-check"></i> Booking Status
-                </a>
-                <a href="#" class="flex items-center gap-3 p-3 text-gray-300 hover:bg-gray-100 rounded-lg transition">
-                    <i data-lucide="user"></i> Profile
-                </a>
-                <a href="#" onclick="showPage('queue')" class="flex items-center gap-3 p-3 text-gray-300 hover:bg-gray-100 rounded-lg transition">
-    <i data-lucide="clock"></i> Current Status
-</a>
-            </nav>
-            <div class="p-4 border-t border-gray-100">
-                <div class="flex items-center gap-3 p-2">
-                    <div id="user-avatar" class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold">PT</div>
+        <!-- SIDEBAR -->
+        <aside class="w-64 glass border-r border-slate-800 flex flex-col hidden md:flex z-20 shrink-0">
+            <div class="p-6 border-b border-slate-800/80">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
+                    </div>
                     <div>
-                        <p id="user-name-display" class="text-sm font-semibold">Patient</p>
-                        <p id="user-id-display" class="text-xs text-gray-400">Patient Portal</p>
+                        <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+                            Medi<span class="text-blue-500">Q</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-400 font-medium">Smart Queue & Care</p>
                     </div>
                 </div>
             </div>
-            
+
+            <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+                <a href="#" id="nav-home" onclick="showPage('home')" class="flex items-center gap-3 px-3.5 py-2.5 text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-xl font-medium transition">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span>Find & Book</span>
+                </a>
+                <a href="#" id="nav-status" onclick="showPage('status')" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-xl transition font-medium">
+                    <i data-lucide="calendar-check" class="w-5 h-5"></i>
+                    <span>My Bookings</span>
+                </a>
+                <a href="#" id="nav-queue" onclick="showPage('queue')" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-xl transition font-medium">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                    <span>Live Queue</span>
+                </a>
+                <a href="#" id="nav-analytics" onclick="showPage('analytics')" class="flex items-center gap-3 px-3.5 py-2.5 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-xl transition font-medium">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800/80 bg-slate-900/40">
+                <div class="flex items-center justify-between gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div id="user-avatar" class="w-9 h-9 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow">
+                            PT
+                        </div>
+                        <div class="min-w-0">
+                            <p id="user-name-display" class="text-xs font-semibold text-white truncate">Patient</p>
+                            <p id="user-id-display" class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="logout()" title="Logout" class="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-700/50 transition">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
         </aside>
-<main class="flex-1 flex flex-col min-w-0 bg-transparent">
+
+        <!-- MAIN VIEW AREA -->
+        <main class="flex-1 flex flex-col min-w-0 bg-transparent overflow-hidden">
             
-            <header class="h-16 glass border-b border-gray-200 flex items-center px-8 sticky top-0 z-10">
-                <div class="relative w-full max-w-xl">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
-                    <input id="searchInput" type="text" placeholder="Search doctors, specialties, or clinics..." 
-                        class="w-full pl-10 pr-4 py-2 bg-white/10 text-white placeholder-gray-400 border-none rounded-full focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            <!-- TOP NAVBAR -->
+            <header class="h-16 glass border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-10 shrink-0">
+                <div class="flex items-center gap-4 flex-1 max-w-2xl">
+                    <div class="relative w-full">
+                        <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+                        <input id="searchInput" type="text" placeholder="Search hospitals, doctors, or specialisations..." 
+                            class="w-full pl-10 pr-4 py-2 bg-slate-900/80 text-sm text-slate-100 placeholder-slate-400 border border-slate-700/80 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 ml-4">
+                    <button onclick="getUserLocation()" title="Detect Nearby Hospitals" class="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-medium transition">
+                        <i data-lucide="navigation" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">Near Me</span>
+                    </button>
+                    <button onclick="showPage('queue')" class="relative p-2 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-xl border border-slate-700 transition">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                        <span id="active-queue-badge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full badge-pulse"></span>
+                    </button>
                 </div>
             </header>
 
+            <!-- WORKSPACE CONTAINER -->
             <div class="flex-1 flex overflow-hidden">
                 
-                <section id="home-page" class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+                <!-- 1. HOME / FIND HOSPITAL / SELECT DOCTOR FLOW -->
+                <section id="home-page" class="flex-1 p-6 md:p-8 overflow-y-auto custom-scrollbar">
                     
-                    <div class="mb-8 flex flex-wrap gap-4 items-center glass p-4 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center gap-2 text-sm text-white">
-                            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                            <span class="font-semibold">Filters:</span>
+                    <!-- STEP BREADCRUMB PROGRESS BAR -->
+                    <div class="mb-6 glass p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between flex-wrap gap-3">
+                        <div class="flex items-center gap-2 text-xs md:text-sm font-medium">
+                            <span id="step-pill-1" class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-1.5 shadow-sm">
+                                <span>1</span> Find Hospital
+                            </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                            <span id="step-pill-2" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium flex items-center gap-1.5">
+                                <span>2</span> Select Doctor
+                            </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                            <span id="step-pill-3" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium flex items-center gap-1.5">
+                                <span>3</span> Book & Queue
+                            </span>
                         </div>
-                       <select id="locationFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
-    <option class="text-black bg-white">Location (All)</option>
-    <option class="text-black bg-white">Downtown</option>
-    <option class="text-black bg-white">Suburbs</option>
-</select>
 
-<select id="ratingFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
-    <option class="text-black bg-white">Rating (4.0+)</option>
-    <option class="text-black bg-white">5.0 Only</option>
-</select>
-
-<select id="feeFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
-    <option class="text-black bg-white">Fee: Low to High</option>
-    <option class="text-black bg-white">Fee: High to Low</option>
-</select>
-
-<select id="crowdFilter" class="bg-white/20 text-white border border-white/30 rounded-md px-3 py-1.5 text-sm outline-none">
-    <option class="text-black bg-white">Crowd: Low</option>
-    <option class="text-black bg-white">Crowd: Medium</option>
-</select>
-                    </div>
-<div class="mb-8">
-    <h2 class="text-lg font-bold mb-4">Quick Symptoms</h2>
-
-    <div class="grid grid-cols-3 md:grid-cols-6 gap-4">
-
-        <div onclick="selectProblem('Cardiologist')" class="cursor-pointer text-center">
-            <img src="https://img.icons8.com/color/96/heart-with-pulse.png" class="mx-auto w-12"/>
-            <p class="text-xs mt-2">Heart</p>
-        </div>
-
-        <div onclick="selectProblem('Neurologist')" class="cursor-pointer text-center">
-            <img src="https://img.icons8.com/color/96/brain.png" class="mx-auto w-12"/>
-            <p class="text-xs mt-2">Headache</p>
-        </div>
-
-        <div onclick="selectProblem('General Physician')" class="cursor-pointer text-center">
-            <img src="https://img.icons8.com/color/96/thermometer.png" class="mx-auto w-12"/>
-            <p class="text-xs mt-2">Fever</p>
-        </div>
-
-        <div onclick="selectProblem('Dermatologist')" class="cursor-pointer text-center">
-            <img src="https://cdn-icons-png.flaticon.com/512/3774/3774295.png" class="mx-auto w-12"/>
-            <p class="text-xs mt-2">Skin</p>
-        </div>
-
-        <!-- Bone -->
-<div onclick="selectProblem('Orthopedic')" 
-class="cursor-pointer text-center hover:bg-white/10 p-2 rounded-lg">
-<img src="https://cdn-icons-png.flaticon.com/512/2965/2965567.png" class="mx-auto w-12 h-12 object-contain"/>
-    <p class="text-xs mt-2">Bone</p>
-</div>
-
-<!-- ENT -->
-<div onclick="selectProblem('ENT')" 
-class="cursor-pointer text-center hover:bg-white/10 p-2 rounded-lg">
-<img src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png" class="mx-auto w-12 h-12 object-contain"/>
-    <p class="text-xs mt-2">ENT</p>
-</div>
-
-    </div>
-</div>
-                  
-                    <h2 class="text-xl font-bold mb-6">Available Doctors</h2>
-                    <div id="doctor-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div id="hospital-context-tag" class="hidden flex items-center gap-2">
+                            <span id="active-hospital-name" class="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-lg border border-blue-500/20">
+                                Hospital
+                            </span>
+                            <button onclick="resetToHospitalList()" class="text-xs text-slate-400 hover:text-white underline transition">
+                                Change Hospital
+                            </button>
                         </div>
-                </section>
-
-                <section id="status-page" class="hidden flex-1 p-8 overflow-y-auto">
-                    <h2 class="text-2xl font-bold mb-6">My Bookings</h2>
-                    <div id="bookings-list" class="space-y-4">
-                        </div>
-                </section>
-                <section id="queue-page" class="hidden flex-1 p-8 overflow-y-auto">
-
-    <h2 class="text-2xl font-bold mb-6">⏳ Current Queue Status</h2>
-
-    <div id="queue-container" class="space-y-4">
-        <!-- live data will come here -->
-    </div>
-
-</section>
-<section id="analytics-page" class="hidden p-8">
-    <h2 class="text-2xl font-bold mb-6">📊 Hospital Analytics</h2>
-
-    <div class="grid grid-cols-2 gap-6">
-
-        <div class="glass p-6 rounded-xl">
-            <h3 class="font-bold">Total Patients Today</h3>
-            <p id="totalPatients" class="text-3xl font-bold text-blue-400">0</p>
-        </div>
-
-        <div class="glass p-6 rounded-xl">
-            <h3 class="font-bold">Avg Wait Time</h3>
-            <p id="avgWait" class="text-3xl font-bold text-green-400">0 mins</p>
-        </div>
-
-    </div>
-</section>
-                <aside id="booking-panel" class="w-96 glass border-l border-gray-200 p-6 hidden lg:block overflow-y-auto custom-scrollbar">
-                    <div id="booking-content-empty" class="h-full flex flex-col items-center justify-center text-center text-gray-400">
-                        <i data-lucide="calendar" class="w-12 h-12 mb-4 opacity-20"></i>
-                        <p>Select a doctor to view <br>available time slots</p>
                     </div>
 
-                    <div id="booking-content-active" class="hidden">
-                        <h3 class="text-lg font-bold mb-4">Book Appointment</h3>
-                        <div id="selected-doc-info" class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <!-- ============================================== -->
+                    <!-- VIEW 1: HOSPITAL DISCOVERY (Near Me & Explore) -->
+                    <!-- ============================================== -->
+                    <div id="hospital-discovery-section" class="space-y-6">
+                        
+                        <!-- Discovery Header & Mode Switcher -->
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="building-2" class="w-6 h-6 text-blue-500"></i>
+                                    Find Hospital
+                                </h2>
+                                <p class="text-xs md:text-sm text-slate-400 mt-1">
+                                    Discover verified healthcare facilities with live doctor queue telemetry & distance calculation.
+                                </p>
                             </div>
 
-                        <label class="block text-sm font-semibold mb-3">Available Slots (Today)</label>
-                        <div id="time-slots" class="grid grid-cols-3 gap-2 mb-8">
+                            <!-- Near Me / Explore Toggle -->
+                            <div class="flex items-center gap-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                                <button id="btn-mode-near" onclick="setHospitalDiscoveryMode('near_me')" 
+                                    class="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                                    Near Me
+                                </button>
+                                <button id="btn-mode-explore" onclick="setHospitalDiscoveryMode('explore')" 
+                                    class="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-blue-600 text-white shadow">
+                                    <i data-lucide="compass" class="w-3.5 h-3.5"></i>
+                                    Explore Hospitals
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Location Alert / Status Banner -->
+                        <div id="location-status-banner" class="hidden glass p-3.5 rounded-xl border border-blue-500/30 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2.5 text-blue-300">
+                                <i data-lucide="crosshair" class="w-4 h-4 text-blue-400 shrink-0"></i>
+                                <span id="location-status-text">Detecting your location...</span>
+                            </div>
+                            <button onclick="getUserLocation()" class="text-blue-400 hover:underline font-medium">Refresh Location</button>
+                        </div>
+
+                        <!-- Hospital Cards Grid -->
+                        <div id="hospital-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <!-- Dynamically populated hospital cards -->
+                        </div>
+
+                        <!-- Empty State for Hospitals -->
+                        <div id="hospital-empty-state" class="hidden glass p-10 rounded-2xl text-center">
+                            <div class="w-14 h-14 mx-auto bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-3">
+                                <i data-lucide="building" class="w-7 h-7"></i>
+                            </div>
+                            <h3 class="text-base font-bold text-white mb-1">No Hospitals Found</h3>
+                            <p class="text-xs text-slate-400 max-w-sm mx-auto mb-4">
+                                No hospital matches your search criteria or location coordinates. Try expanding your search or explore all hospitals.
+                            </p>
+                            <button onclick="setHospitalDiscoveryMode('explore')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-semibold rounded-lg transition">
+                                View All Available Hospitals
+                            </button>
+                        </div>
+                    </div>
+
+
+                    <!-- ============================================== -->
+                    <!-- VIEW 2: DOCTOR SELECTION & SMART RECOMMENDATION -->
+                    <!-- ============================================== -->
+                    <div id="doctor-selection-section" class="hidden space-y-6">
+                        
+                        <!-- Selected Hospital Banner -->
+                        <div class="glass p-5 rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-slate-900/60 to-slate-900/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+                                    <i data-lucide="stethoscope" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h2 id="active-hosp-title" class="text-lg md:text-xl font-bold text-white">Hospital Name</h2>
+                                        <span id="active-hosp-crowd-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            Low Crowd
+                                        </span>
+                                    </div>
+                                    <p id="active-hosp-address" class="text-xs text-slate-400 mt-0.5">Address, City</p>
+                                </div>
                             </div>
 
-                        <div class="border-t border-gray-100 pt-6">
-                            <h4 class="font-bold mb-2">Summary</h4>
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="text-gray-400">Consultation Fee</span>
-                                <span id="summary-fee" class="font-semibold">$0.00</span>
+                            <div class="flex items-center gap-3 self-end md:self-center">
+                                <button onclick="resetToHospitalList()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                                    Back to Hospitals
+                                </button>
                             </div>
-                            <div class="flex justify-between text-sm mb-4">
-                                <span class="text-gray-400">Service Tax</span>
-                                <span class="font-semibold">₹2.00</span>
+                        </div>
+
+                        <!-- Specialisation Filter Chips -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="layout-grid" class="w-4 h-4 text-blue-400"></i>
+                                    Select Specialisation
+                                </h3>
+                                <span id="specialisation-count-badge" class="text-xs text-slate-400">Showing all</span>
                             </div>
-                            <button onclick="confirmBooking()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition transform active:scale-95 shadow-lg shadow-blue-200">
+
+                            <div class="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar" id="specialisation-chips">
+                                <!-- Populated dynamically with specialty icons & counts -->
+                            </div>
+                        </div>
+
+                        <!-- Filters Row -->
+                        <div class="flex flex-wrap gap-3 items-center glass p-3.5 rounded-xl border border-slate-800 text-xs">
+                            <div class="flex items-center gap-1.5 text-slate-300 font-semibold mr-2">
+                                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-blue-400"></i>
+                                <span>Refine:</span>
+                            </div>
+
+                            <select id="ratingFilter" class="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-blue-500">
+                                <option value="All">All Ratings</option>
+                                <option value="Rating (4.0+)">Rating 4.0+</option>
+                                <option value="5.0 Only">5.0 Star Only</option>
+                            </select>
+
+                            <select id="feeFilter" class="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-blue-500">
+                                <option value="Default">Fee: Default</option>
+                                <option value="Fee: Low to High">Fee: Low to High</option>
+                                <option value="Fee: High to Low">Fee: High to Low</option>
+                            </select>
+
+                            <select id="crowdFilter" class="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-blue-500">
+                                <option value="All">All Queue Sizes</option>
+                                <option value="Crowd: Low">Short Queue (0-2)</option>
+                                <option value="Crowd: Medium">Moderate Queue (3+)</option>
+                            </select>
+
+                            <button onclick="clearDoctorFilters()" class="ml-auto text-slate-400 hover:text-slate-200 text-xs transition">
+                                Reset Filters
+                            </button>
+                        </div>
+
+                        <!-- Doctor Grid Title & Recommendation Banner -->
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+                                    Available Doctors in Hospital
+                                </h3>
+                                <span id="doctor-count-badge" class="text-xs text-slate-400 font-medium">0 Doctors</span>
+                            </div>
+
+                            <!-- Doctor Grid -->
+                            <div id="doctor-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                <!-- Populated dynamically -->
+                            </div>
+
+                            <!-- Doctor Empty State -->
+                            <div id="doctor-empty-state" class="hidden glass p-10 rounded-2xl text-center">
+                                <div class="w-14 h-14 mx-auto bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-3">
+                                    <i data-lucide="user-x" class="w-7 h-7"></i>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1">No Doctors Matching Criteria</h4>
+                                <p class="text-xs text-slate-400 max-w-sm mx-auto mb-4">
+                                    No doctors found for the selected specialisation or filters in this hospital.
+                                </p>
+                                <button onclick="selectSpecialisation('All')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-semibold rounded-lg transition">
+                                    Show All Doctors in this Hospital
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <!-- 2. MY BOOKINGS STATUS PAGE -->
+                <section id="status-page" class="hidden flex-1 p-6 md:p-8 overflow-y-auto custom-scrollbar">
+                    <div class="max-w-4xl mx-auto space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="calendar" class="w-6 h-6 text-blue-500"></i>
+                                    My Appointments
+                                </h2>
+                                <p class="text-xs text-slate-400 mt-1">Track upcoming consultations, queue positions, and booking status.</p>
+                            </div>
+                            <button onclick="renderBookings()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
+                            </button>
+                        </div>
+
+                        <div id="bookings-list" class="space-y-4">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. LIVE QUEUE STATUS PAGE -->
+                <section id="queue-page" class="hidden flex-1 p-6 md:p-8 overflow-y-auto custom-scrollbar">
+                    <div class="max-w-4xl mx-auto space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="clock" class="w-6 h-6 text-amber-400"></i>
+                                    Live Queue Tracker
+                                </h2>
+                                <p class="text-xs text-slate-400 mt-1">Real-time status updates, turn warnings, and estimated consultation arrival time.</p>
+                            </div>
+                            <button onclick="renderQueueStatus()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Live Refresh
+                            </button>
+                        </div>
+
+                        <div id="queue-container" class="space-y-5">
+                            <!-- Live queue cards populated here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. ANALYTICS PAGE -->
+                <section id="analytics-page" class="hidden flex-1 p-6 md:p-8 overflow-y-auto custom-scrollbar">
+                    <div class="max-w-4xl mx-auto space-y-6">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6 text-indigo-400"></i>
+                            Hospital Queue Analytics
+                        </h2>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            <div class="glass p-5 rounded-2xl border border-slate-800">
+                                <p class="text-xs font-semibold text-slate-400">Total Consultations Today</p>
+                                <p id="totalPatients" class="text-3xl font-bold text-blue-400 mt-2">0</p>
+                                <p class="text-[11px] text-slate-500 mt-1">Across all participating doctors</p>
+                            </div>
+
+                            <div class="glass p-5 rounded-2xl border border-slate-800">
+                                <p class="text-xs font-semibold text-slate-400">Average Waiting Time</p>
+                                <p id="avgWait" class="text-3xl font-bold text-emerald-400 mt-2">0 mins</p>
+                                <p class="text-[11px] text-slate-500 mt-1">Calculated from completed sessions</p>
+                            </div>
+
+                            <div class="glass p-5 rounded-2xl border border-slate-800">
+                                <p class="text-xs font-semibold text-slate-400">Active Queue Patients</p>
+                                <p id="activePatientsToday" class="text-3xl font-bold text-amber-400 mt-2">0</p>
+                                <p class="text-[11px] text-slate-500 mt-1">Currently waiting & consulting</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- BOOKING SIDE PANEL -->
+                <aside id="booking-panel" class="w-96 glass border-l border-slate-800 p-6 hidden lg:flex flex-col overflow-y-auto custom-scrollbar shrink-0">
+                    <div id="booking-content-empty" class="h-full flex flex-col items-center justify-center text-center text-slate-400 my-auto">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-500 mb-4 shadow">
+                            <i data-lucide="calendar" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-200">No Doctor Selected</h4>
+                        <p class="text-xs text-slate-400 mt-1 max-w-[200px]">
+                            Select a doctor card to preview schedule slots and confirm appointment.
+                        </p>
+                    </div>
+
+                    <div id="booking-content-active" class="hidden flex flex-col h-full">
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="calendar-plus" class="w-4 h-4 text-blue-400"></i>
+                                Book Appointment
+                            </h3>
+                            <button onclick="closeBooking()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div id="selected-doc-info" class="my-4 p-4 rounded-xl bg-blue-950/30 border border-blue-500/20">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-xs font-semibold text-slate-300 mb-2.5 flex items-center justify-between">
+                                <span>Available Slots (Today)</span>
+                                <span class="text-[11px] text-emerald-400 font-medium">Instant Queue Entry</span>
+                            </label>
+                            <div id="time-slots" class="grid grid-cols-3 gap-2">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-800 pt-4 mt-auto space-y-3">
+                            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Fee Summary</h4>
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Consultation Fee</span>
+                                <span id="summary-fee" class="font-semibold text-white">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>Platform & Service Fee</span>
+                                <span class="font-semibold text-emerald-400">FREE</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-bold text-white pt-2 border-t border-slate-800">
+                                <span>Total Payable</span>
+                                <span id="summary-total" class="text-blue-400 font-bold">₹0.00</span>
+                            </div>
+
+                            <button onclick="confirmBooking()" class="w-full mt-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-3 rounded-xl font-bold text-sm transition transform active:scale-98 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
                                 Confirm Booking
                             </button>
-                            <button onclick="closeBooking()" class="w-full mt-3 text-gray-400 py-2 font-medium hover:text-red-500 transition">
-                                Cancel
+                            <button onclick="closeBooking()" class="w-full text-slate-400 py-1.5 text-xs font-medium hover:text-slate-200 transition">
+                                Cancel Selection
                             </button>
-                            <button onclick="addEmergencyDelay()" 
-class="fixed bottom-5 left-5 bg-red-600 px-4 py-2 rounded">
-🚨 Emergency Case
-</button>
                         </div>
                     </div>
                 </aside>
@@ -263,798 +528,1519 @@ class="fixed bottom-5 left-5 bg-red-600 px-4 py-2 rounded">
         </main>
     </div>
 
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl transform translate-y-32 transition-transform duration-300 z-50">
-        Booking confirmed successfully!
-    </div>
-     <div id="completion-popup" 
-class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
-
-    <div class="glass p-8 rounded-2xl text-center shadow-2xl animate-bounce">
-        <h2 class="text-2xl font-bold text-green-400 mb-2">✅ Visit Completed</h2>
-        <p class="text-gray-300 mb-4">Your consultation is finished</p>
-
-        <button onclick="closeCompletionPopup()" 
-        class="bg-green-500 px-5 py-2 rounded-lg font-bold hover:bg-green-600">
-            OK
-        </button>
-    </div>
-</div>
-<div id="cancel-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
-  <div class="glass p-6 rounded-xl w-96">
-    
-    <h2 class="text-lg font-bold mb-4">Cancel Appointment</h2>
-
-    <!-- Reason -->
-    <label class="text-sm">Reason:</label>
-    <select id="cancel-reason" class="w-full mt-2 mb-4 p-2 bg-white/10 rounded">
-      <option>Unable to reach</option>
-      <option>Booked by mistake</option>
-      <option>Going to another doctor</option>
-      <option>Emergency</option>
-    </select>
-
-    <!-- Custom reason -->
-    <input id="custom-reason" placeholder="Other reason..."
-      class="w-full p-2 bg-white/10 rounded mb-4"/>
-
-    <!-- Checkbox -->
-    <label class="flex items-center gap-2 text-sm mb-4">
-      <input type="checkbox" id="confirm-cancel"/>
-      I understand this cannot be undone
-    </label>
-
-    <!-- Buttons -->
-    <div class="flex justify-end gap-3">
-      <button onclick="closeCancelModal()" class="text-gray-400">Close</button>
-      <button onclick="finalCancel()" class="bg-red-500 px-4 py-2 rounded">
-        Confirm Cancel
-      </button>
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white px-5 py-2.5 rounded-full shadow-2xl transform translate-y-32 transition-transform duration-300 z-50 text-xs font-medium flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toast-text">Booking confirmed successfully!</span>
     </div>
 
-  </div>
-</div>
-    <script>
-  // 1. INITIALIZE SUPABASE
-const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
-const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
-
-let doctors = [];
-let allDoctors = [];
-let defaultDoctorsList = [
-    { id: 1, name: "Dr. Sarah Jenkins", spec: "Cardiologist", fee: 150, rating: 4.9, location: "Downtown", crowd: "Low", img: "Sarah" },
-    { id: 2, name: "Dr. Rajesh Kumar", spec: "Neurologist", fee: 200, rating: 4.8, location: "Downtown", crowd: "Medium", img: "Rajesh" },
-    { id: 3, name: "Dr. Anita Sharma", spec: "General Physician", fee: 100, rating: 4.7, location: "Suburbs", crowd: "Low", img: "Anita" },
-    { id: 4, name: "Dr. Vikram Patel", spec: "Dermatologist", fee: 120, rating: 4.6, location: "Suburbs", crowd: "Low", img: "Vikram" },
-    { id: 5, name: "Dr. Priya Roy", spec: "Orthopedic", fee: 180, rating: 4.9, location: "Downtown", crowd: "Low", img: "Priya" },
-    { id: 6, name: "Dr. Suresh Nair", spec: "ENT", fee: 130, rating: 4.5, location: "Suburbs", crowd: "Medium", img: "Suresh" }
-];
-let myBookings = [];
-let lastCompletedId = null;
-let selectedDoctor = null;
-let selectedTime = null;
-let voicePlayed = false;
-let cancelId = null;
-let globalDelay = 10; // 🔥 dynamic delay
-
-function addEmergencyDelay() {
-    globalDelay += 10; // assume 10 mins extra
-}
-function openCancelModal(id) {
-    cancelId = id;
-    document.getElementById("cancel-modal").classList.remove("hidden");
-}
-
-function closeCancelModal() {
-    document.getElementById("cancel-modal").classList.add("hidden");
-    document.getElementById("confirm-cancel").checked = false;
-    document.getElementById("custom-reason").value = "";
-}
-function selectProblem(specialization) {
-    document.getElementById('searchInput').value = specialization;
-    applyFilters();
-}
-function playSound() {
-    const snd = document.getElementById("notify-sound");
-    if (snd) snd.play().catch(e => console.log("Audio play blocked", e));
-}
-
-// 2. FETCH DATA FROM YOUR DATASET
-async function init() {
-    // Update user info display
-    const username = localStorage.getItem("username") || "Patient";
-    const userDisplay = document.getElementById("user-name-display");
-    const userAvatar = document.getElementById("user-avatar");
-    if (userDisplay) userDisplay.innerText = username;
-    if (userAvatar) userAvatar.innerText = username.substring(0, 2).toUpperCase();
-
-    let fetchedData = null;
-    if (supabaseClient) {
-        try {
-            const { data, error } = await supabaseClient
-                .from('doctors')
-                .select('*');
-            if (!error && data && data.length > 0) {
-                fetchedData = data;
-            }
-        } catch (err) {
-            console.warn("Supabase doctors fetch notice:", err);
-        }
-    }
-
-    if (fetchedData && fetchedData.length > 0) {
-        allDoctors = fetchedData.map(doc => ({
-            id: doc.id,
-            name: doc.name,
-            spec: doc.specialization || doc.spec || "General",
-            fee: doc.fee || 100,
-            rating: doc.rating || 4.5,
-            location: doc.location || "Downtown",
-            crowd: doc.crowd || "Low",
-            img: doc.name
-        }));
-    } else {
-        allDoctors = [...defaultDoctorsList];
-    }
-
-    doctors = [...allDoctors];
-    renderDoctors();
-
-    if (window.lucide) lucide.createIcons();
-
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.addEventListener('input', applyFilters);
-    const ratingFilter = document.getElementById('ratingFilter');
-    if (ratingFilter) ratingFilter.addEventListener('change', applyFilters);
-    const feeFilter = document.getElementById('feeFilter');
-    if (feeFilter) feeFilter.addEventListener('change', applyFilters);
-    const crowdFilter = document.getElementById('crowdFilter');
-    if (crowdFilter) crowdFilter.addEventListener('change', applyFilters);
-    const locationFilter = document.getElementById('locationFilter');
-    if (locationFilter) locationFilter.addEventListener('change', applyFilters);
-}
-function highlightText(text, search) {
-    if (!search) return text;
-
-    const regex = new RegExp(`(${search})`, 'gi');
-    return text.replace(regex, `<span class="bg-yellow-200">$1</span>`);
-}
-
-// 3. RENDER DOCTOR CARDS
-function renderDoctors() {
-    const grid = document.getElementById('doctor-grid');
-    grid.innerHTML = doctors.map(doc => `
-        <div class="glass p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group">
-            <div class="flex items-start justify-between mb-4">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-[10px] text-center p-1 leading-tight">
-                    ${doc.img ? doc.img.substring(0, 2).toUpperCase() : 'DR'}
-                </div>
-                <span class="text-xs font-bold px-2 py-1 rounded-full ${doc.crowd === 'Low' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}">
-                    ${doc.crowd} Crowd
-                </span>
+    <!-- COMPLETION POPUP -->
+    <div id="completion-popup" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center z-50 p-4">
+        <div class="glass p-7 rounded-2xl max-w-sm w-full text-center shadow-2xl border border-emerald-500/40">
+            <div class="w-14 h-14 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 mb-3 border border-emerald-500/30">
+                <i data-lucide="check" class="w-7 h-7"></i>
             </div>
-      <h3 class="font-bold text-white group-hover:text-blue-600 transition text-sm leading-tight">
-    ${highlightText(doc.name, document.getElementById('searchInput').value)}
-</h3>
-
-<p class="text-xs text-gray-400 mb-3">
-    ${highlightText(doc.spec, document.getElementById('searchInput').value)}
-</p>
-            <div class="flex items-center gap-4 mb-5 text-sm">
-                <div class="flex items-center gap-1 text-yellow-500 font-bold">
-                    <i data-lucide="star" class="w-4 h-4 fill-current"></i> ${doc.rating}
-                </div>
-                <div class="text-gray-400">|</div>
-                <div class="font-semibold">₹${doc.fee}</div>
-            </div>
-            <button onclick="openBooking(${doc.id})" class="w-full py-2 bg-blue-600 text-white hover:bg-blue-700 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition">
-                Book Now
+            <h2 class="text-xl font-bold text-white mb-1">Consultation Completed</h2>
+            <p class="text-xs text-slate-300 mb-5">Your medical consultation has finished. Thank you for using MediQ.</p>
+            <button onclick="closeCompletionPopup()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                Done
             </button>
         </div>
-    `).join('');
-    lucide.createIcons();
-}
-    function applyFilters() {
-    const searchText = document.getElementById('searchInput').value.toLowerCase();
-    const rating = document.getElementById('ratingFilter').value;
-    const fee = document.getElementById('feeFilter').value;
-    const crowd = document.getElementById('crowdFilter').value;
-    const location = document.getElementById('locationFilter').value;
+    </div>
 
-    doctors = allDoctors.filter(doc => {
+    <!-- CANCEL MODAL -->
+    <div id="cancel-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center z-50 p-4">
+        <div class="glass p-6 rounded-2xl max-w-sm w-full border border-slate-700 shadow-2xl">
+            <h2 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-rose-400"></i>
+                Cancel Appointment
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">Are you sure you want to release your queue position?</p>
 
-       const matchesSearch =
-    doc.name.toLowerCase().includes(searchText) ||
-    doc.spec.toLowerCase().includes(searchText);
+            <label class="text-xs text-slate-300 font-medium block mb-1">Reason for cancellation:</label>
+            <select id="cancel-reason" class="w-full mb-3 p-2 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg outline-none focus:border-blue-500">
+                <option value="Unable to reach in time">Unable to reach in time</option>
+                <option value="Booked by mistake">Booked by mistake</option>
+                <option value="Going to another doctor">Going to another doctor</option>
+                <option value="Emergency reschedule">Emergency reschedule</option>
+            </select>
 
-        let matchesRating = true;
-        if (rating === "5.0 Only") matchesRating = doc.rating === 5;
-        else if (rating === "Rating (4.0+)") matchesRating = doc.rating >= 4;
+            <input id="custom-reason" placeholder="Other specific reason (optional)..."
+                class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg mb-4 outline-none focus:border-blue-500"/>
 
-        let matchesCrowd = true;
-        if (crowd === "Crowd: Low") matchesCrowd = doc.crowd === "Low";
-        if (crowd === "Crowd: Medium") matchesCrowd = doc.crowd === "Medium";
+            <label class="flex items-center gap-2 text-xs text-slate-400 mb-5 cursor-pointer">
+                <input type="checkbox" id="confirm-cancel" class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0"/>
+                <span>I understand this cannot be undone</span>
+            </label>
 
-        let matchesLocation = true;
+            <div class="flex justify-end gap-2">
+                <button onclick="closeCancelModal()" class="px-3.5 py-2 text-xs text-slate-400 hover:text-white rounded-lg transition">
+                    Keep Appointment
+                </button>
+                <button onclick="finalCancel()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition">
+                    Confirm Cancellation
+                </button>
+            </div>
+        </div>
+    </div>
 
-if (location === "Downtown") matchesLocation = doc.location === "Downtown";
-if (location === "Suburbs") matchesLocation = doc.location === "Suburbs";
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // 1. SUPABASE CLIENT INITIALIZATION
+        const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
+        const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
-        return matchesSearch && matchesRating && matchesCrowd && matchesLocation;
-    });
+        // Sample hospital dataset fallback (with realistic coordinates) if Supabase table is empty
+        const sampleHospitals = [
+            {
+                Hospital_ID: 1,
+                Hospital_Name: "Apollo Multispeciality Hospital",
+                City: "Downtown",
+                State: "Metro State",
+                Country: "India",
+                Latitude: 17.4239,
+                Longitude: 78.4116,
+                Address: "Plot 12, Health City, Downtown",
+                image: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=600&auto=format&fit=crop&q=80"
+            },
+            {
+                Hospital_ID: 2,
+                Hospital_Name: "CityCare Medical & Research Centre",
+                City: "Suburbs",
+                State: "Metro State",
+                Country: "India",
+                Latitude: 17.4485,
+                Longitude: 78.3742,
+                Address: "450 Healthcare Boulevard, Suburbs",
+                image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&auto=format&fit=crop&q=80"
+            },
+            {
+                Hospital_ID: 3,
+                Hospital_Name: "Metro Health Community Clinic",
+                City: "Downtown",
+                State: "Metro State",
+                Country: "India",
+                Latitude: 17.3850,
+                Longitude: 78.4867,
+                Address: "128 Innovation Way, Central Wing",
+                image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=600&auto=format&fit=crop&q=80"
+            },
+            {
+                Hospital_ID: 4,
+                Hospital_Name: "St. Jude Wellness & Pediatric Hospital",
+                City: "Suburbs",
+                State: "Metro State",
+                Country: "India",
+                Latitude: 17.4933,
+                Longitude: 78.3995,
+                Address: "89 Green Avenue, North Suburbs",
+                image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=600&auto=format&fit=crop&q=80"
+            }
+        ];
 
-    if (fee === "Fee: Low to High") {
-        doctors.sort((a, b) => a.fee - b.fee);
-    } else if (fee === "Fee: High to Low") {
-        doctors.sort((a, b) => b.fee - a.fee);
-    }
+        // Sample doctors dataset fallback
+        const sampleDoctors = [
+            { id: 1, name: "Dr. Sarah Jenkins", spec: "Cardiologist", fee: 150, rating: 4.9, location: "Downtown", hospital_id: 1, crowd: "Low", isAvailable: true },
+            { id: 2, name: "Dr. Rajesh Kumar", spec: "Neurologist", fee: 200, rating: 4.8, location: "Downtown", hospital_id: 1, crowd: "Medium", isAvailable: true },
+            { id: 3, name: "Dr. Rahul Verma", spec: "General Physician", fee: 100, rating: 4.7, location: "Downtown", hospital_id: 1, crowd: "Low", isAvailable: true },
+            { id: 4, name: "Dr. Anita Sharma", spec: "General Physician", fee: 110, rating: 4.8, location: "Suburbs", hospital_id: 2, crowd: "Low", isAvailable: true },
+            { id: 5, name: "Dr. Vikram Patel", spec: "Dermatologist", fee: 130, rating: 4.6, location: "Suburbs", hospital_id: 2, crowd: "Low", isAvailable: true },
+            { id: 6, name: "Dr. Priya Roy", spec: "Orthopedic", fee: 180, rating: 4.9, location: "Downtown", hospital_id: 3, crowd: "Low", isAvailable: true },
+            { id: 7, name: "Dr. Suresh Nair", spec: "ENT", fee: 120, rating: 4.5, location: "Suburbs", hospital_id: 2, crowd: "Medium", isAvailable: true },
+            { id: 8, name: "Dr. Meera Nambiar", spec: "Cardiologist", fee: 160, rating: 4.8, location: "Suburbs", hospital_id: 4, crowd: "Low", isAvailable: true },
+            { id: 9, name: "Dr. Sanjay Gupta", spec: "Pediatrician", fee: 140, rating: 4.9, location: "Suburbs", hospital_id: 4, crowd: "Low", isAvailable: true }
+        ];
 
-    renderDoctors();
-    
-}
-// 4. UI & NAVIGATION LOGIC (KEEP THESE AS IS)
-function showPage(page) {
-    const home = document.getElementById('home-page');
-    const status = document.getElementById('status-page');
-    const queue = document.getElementById('queue-page');
+        // Global Application State
+        let allHospitals = [];
+        let displayedHospitals = [];
+        let allDoctors = [];
+        let hospitalDoctors = [];
+        let filteredDoctors = [];
+        let selectedHospital = null;
+        let selectedSpecialisation = "All";
+        let userCoordinates = null;
+        let discoveryMode = "explore"; // "explore" | "near_me"
+        let selectedDoctor = null;
+        let selectedTime = null;
+        let lastCompletedId = null;
+        let cancelId = null;
+        let globalDelay = 0;
+        let voicePlayed = false;
+        let activeBookingsData = [];
 
-    // hide all
-    home.classList.add('hidden');
-    status.classList.add('hidden');
-    queue.classList.add('hidden');
+        // 2. DISTANCE UTILITY (Haversine Formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return parseFloat((R * c).toFixed(1));
+        }
 
-    // show selected
-    if (page === 'home') home.classList.remove('hidden');
+        // 3. INITIALIZATION & DATA FETCHING
+        async function init() {
+            // Display Patient User Info
+            const username = localStorage.getItem("username") || "Patient";
+            const userDisplay = document.getElementById("user-name-display");
+            const userAvatar = document.getElementById("user-avatar");
+            if (userDisplay) userDisplay.innerText = username;
+            if (userAvatar) userAvatar.innerText = username.substring(0, 2).toUpperCase();
 
-    if (page === 'status') {
-        status.classList.remove('hidden');
-        renderBookings();
-    }
+            // Fetch Real Active Bookings from Supabase
+            await fetchActiveBookings();
 
-    if (page === 'queue') {
-        queue.classList.remove('hidden');
-        renderQueueStatus();
-    }
-}
-function getDelayReason(ahead) {
+            // Fetch Hospitals from Supabase
+            await fetchHospitals();
 
-    // 🚨 If emergency triggered
-    if (globalDelay > 0) {
-        return "🚨 Emergency case being handled.";
-    }
+            // Fetch Doctors from Supabase
+            await fetchDoctors();
 
-    const reasons = [
-        "Doctor is giving detailed consultation.",
-        "Slight delay due to complex cases.",
-        "High patient volume today.",
-        "Doctor is reviewing reports."
-    ];
+            // Setup Search & Filter Listeners
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.addEventListener('input', handleGlobalSearch);
+            
+            const ratingFilter = document.getElementById('ratingFilter');
+            if (ratingFilter) ratingFilter.addEventListener('change', applyDoctorFilters);
 
-    let index = ahead % reasons.length;
+            const feeFilter = document.getElementById('feeFilter');
+            if (feeFilter) feeFilter.addEventListener('change', applyDoctorFilters);
 
-    return "🧠 " + reasons[index];
-}
-function speak(message) {
-    const speech = new SpeechSynthesisUtterance(message);
-    speech.rate = 1;
-    speech.pitch = 1;
-    speech.volume = 1;
-    window.speechSynthesis.speak(speech);
-}
-async function renderQueueStatus() {
+            const crowdFilter = document.getElementById('crowdFilter');
+            if (crowdFilter) crowdFilter.addEventListener('change', applyDoctorFilters);
 
-    const patientName = localStorage.getItem("username");
- 
-    const { data, error } = await supabaseClient
-        .from('bookings')
-        .select('*')
-        .eq('patient_name', patientName)
-        .neq('status', 'cancelled')
-        .order('priority', { ascending: false })
-        .order('queue_number', { ascending: true });
+            // Render Initial Hospital Discovery View
+            renderHospitals();
+            loadAnalytics();
 
-    if (error) return;
+            if (window.lucide) lucide.createIcons();
+        }
 
-    const container = document.getElementById('queue-container');
-    
+        // 4. FETCH HOSPITALS FROM SUPABASE
+        async function fetchHospitals() {
+            let fetched = null;
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('hospitals')
+                        .select('*');
+                    if (!error && data && data.length > 0) {
+                        fetched = data;
+                    }
+                } catch (e) {
+                    console.warn("Supabase hospitals fetch notice:", e);
+                }
+            }
 
-    if (!data || data.length === 0) {
-        container.innerHTML = `<p class="text-gray-400 text-center">No active appointments</p>`;
-        return;
-    }
+            if (fetched && fetched.length > 0) {
+                allHospitals = fetched.map(h => {
+                    const id = h.Hospital_ID || h.hospital_id || h.id || 1;
+                    const name = h.Hospital_Name || h.hospital_name || h.name || "General Hospital";
+                    const city = h.City || h.city || "Downtown";
+                    const state = h.State || h.state || "";
+                    const country = h.Country || h.country || "";
+                    const lat = parseFloat(h.Latitude || h.latitude || h.lat || 0);
+                    const lng = parseFloat(h.Longitude || h.longitude || h.lng || 0);
+                    const address = h.Address || h.address || `${city}${state ? ', ' + state : ''}`;
+                    const img = h.Image || h.image || h.image_url || getHospitalIllustration(id);
 
-    // Remove duplicate doctors
-const uniqueDoctors = data.filter(
-    (booking, index, self) =>
-        index === self.findIndex(x => x.doctor_id === booking.doctor_id)
-);
+                    return {
+                        id,
+                        name,
+                        city,
+                        state,
+                        country,
+                        address,
+                        lat,
+                        lng,
+                        image: img
+                    };
+                });
+            } else {
+                allHospitals = [...sampleHospitals].map(h => ({
+                    id: h.Hospital_ID,
+                    name: h.Hospital_Name,
+                    city: h.City,
+                    state: h.State,
+                    country: h.Country,
+                    address: h.Address,
+                    lat: h.Latitude,
+                    lng: h.Longitude,
+                    image: h.image
+                }));
+            }
 
-container.innerHTML = uniqueDoctors.map(b => {
+            displayedHospitals = [...allHospitals];
+        }
 
-        // Create queue from current doctor bookings
-const doctorQueue = data
-    .filter(x => x.doctor_id === b.doctor_id)
-    .sort((a, b) => a.queue_number - b.queue_number);
+        function getHospitalIllustration(id) {
+            const imgs = [
+                "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=600&auto=format&fit=crop&q=80",
+                "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&auto=format&fit=crop&q=80",
+                "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=600&auto=format&fit=crop&q=80",
+                "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=600&auto=format&fit=crop&q=80"
+            ];
+            return imgs[(id || 0) % imgs.length];
+        }
 
-// Find position
-const index = doctorQueue.findIndex(x => x.id === b.id);
-const ahead = index;
-const total = doctorQueue.length;
-        const progress = ((total - ahead) / total) * 100;
-        let waitTime = 0;
+        // 5. FETCH DOCTORS FROM SUPABASE
+        async function fetchDoctors() {
+            let fetched = null;
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('doctors')
+                        .select('*');
+                    if (!error && data && data.length > 0) {
+                        fetched = data;
+                    }
+                } catch (e) {
+                    console.warn("Supabase doctors fetch notice:", e);
+                }
+            }
 
-for (let i = 0; i < index; i++) {
-    const prev = doctorQueue[i];
-
-    let time = prev.actual_time || 5;
-
-    // smooth + cap (fixes huge jumps)
-    time = Math.min((time + 5) / 2, 10);
-
-    // smaller emergency impact
-    if (prev.is_emergency) {
-        time += 5;
-    }
-
-    waitTime += time;
-}
-
-        const arrivalTime = new Date(Date.now() + waitTime * 60000)
-            .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-       let reason = "🧠 Doctor is consulting patients";
-
-if (b.is_emergency) {
-    reason = "🚨 Emergency case is being handled";
-}
-        // 🔊 Voice when near turn
-       if (ahead === 1 && !voicePlayed) {
-    speak("You are next. Please get ready.");
-    voicePlayed = true;
-}
-if (ahead > 1) {
-    voicePlayed = false;
-}
-if (ahead === 1 && !window.nextAlertShown) {
-    window.nextAlertShown = true;
-    showNextAlert();
-    speak("You are next. Please be ready.");
-    playSound();
-}
-
-if (ahead > 1) {
-    window.nextAlertShown = false;
-}
-        let queueVisual = "";
-
-        for (let i = 0; i < total; i++) {
-            if (i < ahead) {
-                queueVisual += `<div class="w-6 h-6 bg-gray-500 rounded-full queue-dot"></div>`;
-            } 
-            else if (i === ahead) {
-                queueVisual += `<div class="w-6 h-6 bg-green-400 rounded-full heartbeat"></div>`;
-            } 
-            else {
-                queueVisual += `<div class="w-6 h-6 bg-blue-500/40 rounded-full queue-dot"></div>`;
+            if (fetched && fetched.length > 0) {
+                allDoctors = fetched.map(doc => ({
+                    id: doc.id || doc.ID,
+                    name: doc.name || doc.Name || "Dr. Medical Professional",
+                    spec: doc.specialization || doc.Specialization || doc.spec || "General Physician",
+                    fee: doc.fee || doc.Fee || 100,
+                    rating: parseFloat(doc.rating || doc.Rating || 4.8),
+                    location: doc.location || doc.Location || "Downtown",
+                    crowd: doc.crowd || "Low",
+                    hospital_id: doc.hospital_id || doc.Hospital_ID || mapDoctorToHospitalId(doc.location, doc.id),
+                    isAvailable: true
+                }));
+            } else {
+                allDoctors = [...sampleDoctors];
             }
         }
 
-        return `
-<div class="glass p-6 rounded-2xl border border-white/10 hover:scale-[1.01] transition">
+        function mapDoctorToHospitalId(location, id) {
+            if (location && location.toLowerCase().includes("suburb")) return 2;
+            if (id % 3 === 0) return 3;
+            if (id % 2 === 0) return 2;
+            return 1;
+        }
 
-    <!-- DOCTOR HEADER -->
-    <div class="flex items-center gap-4 mb-5">
-
-        <!-- Doctor Avatar -->
-        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-            ${b.doctor_name.split(" ")[1]?.charAt(0) || "DR"}
-        </div>
-
-        <div class="flex-1">
-            <h3 class="text-lg font-bold">${b.doctor_name}</h3>
-            <p class="text-xs text-gray-400">Consultation in progress queue</p>
-        </div>
-
-        <div class="text-right">
-            <span class="px-3 py-1 text-xs rounded-full bg-blue-500/20 text-blue-300">
-                Live
-            </span>
-        </div>
-    </div>
-
-    <!-- QUEUE VISUAL AVATARS -->
-    <div class="flex items-center justify-center gap-2 mb-6 flex-wrap">
-
-        ${Array.from({ length: total }).map((_, i) => {
-            if (i < ahead) {
-                return `
-                <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-xs text-white opacity-60">
-                    👤
-                </div>`;
-            } 
-            else if (i === ahead) {
-                return `
-                <div class="w-12 h-12 rounded-full bg-green-400 flex items-center justify-center heartbeat shadow-lg text-white text-lg">
-                    🧑‍⚕️
-                </div>`;
-            } 
-            else {
-                return `
-                <div class="w-10 h-10 rounded-full bg-blue-500/30 flex items-center justify-center text-xs text-white queue-dot">
-                    ⏳
-                </div>`;
+        // 6. FETCH REAL ACTIVE QUEUE BOOKINGS
+        async function fetchActiveBookings() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('bookings')
+                    .select('*')
+                    .in('status', ['waiting', 'in_consultation']);
+                if (!error && data) {
+                    activeBookingsData = data;
+                    const badge = document.getElementById("active-queue-badge");
+                    if (badge) {
+                        if (data.length > 0) badge.classList.remove("hidden");
+                        else badge.classList.add("hidden");
+                    }
+                }
+            } catch (e) {
+                console.warn("Active bookings fetch notice:", e);
             }
-        }).join("")}
-
-    </div>
-
-    <!-- PROGRESS BAR -->
-    <div class="w-full bg-white/10 rounded-full h-3 mb-5 overflow-hidden">
-        <div class="bg-gradient-to-r from-blue-500 to-green-400 h-3 rounded-full transition-all duration-700"
-             style="width:${progress}%"></div>
-    </div>
-
-    <!-- STATS -->
-    <div class="grid grid-cols-3 gap-3 text-center">
-
-        <div class="glass p-3 rounded-xl">
-            <p class="text-gray-400 text-xs">Ahead</p>
-            <p class="text-xl font-bold text-white">${ahead}</p>
-        </div>
-
-        <div class="glass p-3 rounded-xl">
-            <p class="text-gray-400 text-xs">Arrival</p>
-            <p class="text-sm font-bold text-green-400">${arrivalTime}</p>
-        </div>
-
-        <div class="glass p-3 rounded-xl">
-            <p class="text-gray-400 text-xs">Status</p>
-            <p class="text-sm font-bold text-blue-300">Active</p>
-        </div>
-
-    </div>
-
-    <!-- REASON -->
-    <div class="mt-5 text-center text-sm text-blue-300 italic">
-        ${reason}
-    </div>
-
-</div>
-`;
- 
-    }).join('');
-}
-setInterval(() => {
-    renderQueueStatus();
-}, 10000); // updates every 10 seconds
-function openBooking(docId) {
-    selectedDoctor = doctors.find(d => d.id == docId);
-
-    console.log("Selected Doctor:", selectedDoctor);
-
-    if (!selectedDoctor) {
-        alert("Doctor not found");
-        return;
-    }
-
-    document.getElementById('booking-content-empty').classList.add('hidden');
-    document.getElementById('booking-content-active').classList.remove('hidden');
-
-    document.getElementById('selected-doc-info').innerHTML = `
-        <p class="font-bold">${selectedDoctor.name}</p>
-        <p class="text-xs">${selectedDoctor.spec}</p>
-    `;
-
-    document.getElementById('summary-fee').innerText = `₹${selectedDoctor.fee}`;
-
-    const times = ["09:00", "10:30", "13:00", "14:30", "16:00"];
-    const slotsDiv = document.getElementById('time-slots');
-
-    slotsDiv.innerHTML = times.map(t => `
-        <button onclick="selectTime('${t}', this)" class="slot-btn border p-2 rounded">
-            ${t}
-        </button>
-    `).join('');
-}
-
-function selectTime(time, el) {
-    selectedTime = time;
-    document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600'));
-    el.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
-}
-function showNextAlert() {
-    const div = document.createElement("div");
-    div.className = "fixed top-5 right-5 bg-green-500 text-white p-4 rounded-xl shadow-xl animate-bounce z-50";
-    div.innerHTML = "🚨 You are NEXT! Please get ready.";
-    document.body.appendChild(div);
-
-    setTimeout(() => div.remove(), 4000);
-}
-async function confirmBooking() {
-    if (!selectedDoctor) {
-        alert("Select a doctor first");
-        return;
-    }
-
-    if (!selectedTime) {
-        alert("Select a time slot");
-        return;
-    }
-
-    const patientName = localStorage.getItem("username") || "Patient";
-    
-    // STEP 1: get existing bookings for THIS doctor
-    const { data: existing, error: fetchError } = await supabaseClient
-        .from('bookings')
-        .select('*')
-        .eq('doctor_id', selectedDoctor.id);
-
-    if (fetchError) {
-        console.error(fetchError);
-        alert(fetchError.message);
-        return;
-    }
-
-    const activeBookings = existing.filter(b => b.status !== 'cancelled');
-
-const queueNumber = activeBookings.length + 1;
-
-    // STEP 2: insert booking
-   const { error } = await supabaseClient
-  .from('bookings')
-   .insert([{
-    doctor_id: selectedDoctor.id,
-    doctor_name: selectedDoctor.name,
-    patient_name: patientName,
-    date: "Today",
-    time: selectedTime,
-    status: "waiting",
-    queue_number: queueNumber,
-    priority: selectedDoctor.isEmergency ? 3 : 2,
-    started_at: null,
-    ended_at: null,
-    actual_time: 5   // default consultation time
-}]);
-    if (error) {
-        console.error(error);
-        alert("Error saving booking");
-        return;
-    }
-
-    alert("Booking successful!");
-
-    closeBooking();
-    await renderBookings();
-}
-function closeBooking() {
-    document.getElementById('booking-content-active').classList.add('hidden');
-    document.getElementById('booking-content-empty').classList.remove('hidden');
-    selectedDoctor = null;
-    selectedTime = null;
-}
-function showCompletionPopup() {
-    document.getElementById('completion-popup').classList.remove('hidden');
-}
-
-function closeCompletionPopup() {
-    document.getElementById('completion-popup').classList.add('hidden');
-}
-async function renderBookings() {
-    const patientName = localStorage.getItem("username");
-
-const { data, error } = await supabaseClient
-    .from('bookings')
-    .select('*')
-    .eq('patient_name', patientName)
-    .neq('status', 'completed')
-    .neq('status', 'cancelled')
-    .order('id', { ascending: false });
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    const list = document.getElementById('bookings-list');
-
-    list.innerHTML = data.map(b => `
-<div class="glass p-4 rounded-xl border flex justify-between">
-    <div>
-        <p class="font-bold">${b.doctor_name}</p>
-        <p class="text-sm text-gray-400">${b.date} • ${b.time}</p>
-    </div>
-
-    <div class="flex flex-col gap-2 items-end">
-        <span class="px-3 py-1 rounded-full text-xs font-bold
-        ${b.status === 'waiting' ? 'bg-yellow-100 text-yellow-600' : 
-          'bg-green-100 text-green-600'}">
-            ${b.status}
-        </span>
-
-        ${b.status === 'waiting' ? `
-        <button onclick="openCancelModal(${b.id})"
-        class="text-red-400 text-xs hover:underline">
-            Cancel
-        </button>` : ''}
-    </div>
-</div>
-`).join('');
-
-
-    lucide.createIcons();
-}
-async function finalCancel() {
-
-    const checkbox = document.getElementById("confirm-cancel").checked;
-    const reason = document.getElementById("cancel-reason").value;
-    const custom = document.getElementById("custom-reason").value;
-
-    if (!checkbox) {
-        alert("Please confirm cancellation");
-        return;
-    }
-
-    // Get booking
-    const { data: booking } = await supabaseClient
-        .from('bookings')
-        .select('*')
-        .eq('id', cancelId)
-        .single();
-
-    if (!booking) return;
-
-    // ❌ RULE 1: cannot cancel during consultation
-    if (booking.status === "in_consultation") {
-        alert("Cannot cancel during consultation");
-        return;
-    }
-
-    // ❌ RULE 2: cannot cancel if turn is near
-    if (booking.queue_number <= 2) {
-        alert("Too late to cancel. Please contact reception.");
-        return;
-    }
-
-    // Proceed
-   const finalReason = custom.trim() !== "" ? custom : reason;
-await processCancellation(booking, finalReason);
-
-    closeCancelModal();
-}
-async function processCancellation(booking, reason) {
-
-    const doctorId = booking.doctor_id;
-    const cancelledQueue = booking.queue_number;
-
-    // 1️⃣ mark cancelled
-    await supabaseClient
-        .from('bookings')
-        .update({ 
-            status: 'cancelled',
-            cancel_reason: reason
-        })
-        .eq('id', booking.id);
-
-    // 2️⃣ shift queue
-    const { data: others } = await supabaseClient
-        .from('bookings')
-        .select('*')
-        .eq('doctor_id', doctorId)
-        .gt('queue_number', cancelledQueue)
-        .neq('status', 'cancelled');
-
-    for (let b of others) {
-        await supabaseClient
-            .from('bookings')
-            .update({ queue_number: b.queue_number - 1 })
-            .eq('id', b.id);
-    }
-
-    smartNotify("Booking cancelled successfully", "warning");
-
-    await renderBookings();
-    await renderQueueStatus();
-}
-async function loadAnalytics() {
-    const { data } = await supabaseClient
-        .from('bookings')
-        .select('*');
-
-    const total = data.length;
-
-    const avg = data.reduce((sum, b) => sum + (b.estimated_wait || 5), 0) / total;
-
-    document.getElementById("totalPatients").innerText = total;
-    document.getElementById("avgWait").innerText = avg.toFixed(1) + " mins";
-}
-async function cancelBooking(id) {
-
-    const confirmCancel = confirm("Are you sure you want to cancel?");
-    if (!confirmCancel) return;
-
-    // 1️⃣ Get booking details
-    const { data: booking } = await supabaseClient
-        .from('bookings')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-    if (!booking) return;
-
-    const doctorId = booking.doctor_id;
-    const cancelledQueue = booking.queue_number;
-
-    // 2️⃣ Mark as cancelled
-    await supabaseClient
-        .from('bookings')
-        .update({ status: 'cancelled' })
-        .eq('id', id);
-
-    // 3️⃣ SHIFT QUEUE UP (IMPORTANT 🔥)
-    const { data: others } = await supabaseClient
-        .from('bookings')
-        .select('*')
-        .eq('doctor_id', doctorId)
-        .gt('queue_number', cancelledQueue)
-        .neq('status', 'cancelled');
-
-    for (let b of others) {
-        await supabaseClient
-            .from('bookings')
-            .update({ queue_number: b.queue_number - 1 })
-            .eq('id', b.id);
-    }
-
-    // 4️⃣ UI updates
-    smartNotify("Booking cancelled successfully", "warning");
-    renderBookings();
-    renderQueueStatus();
-}
-function smartNotify(message, type="info") {
-
-    const colors = {
-        info: "bg-blue-500",
-        success: "bg-green-500",
-        warning: "bg-yellow-500",
-        danger: "bg-red-500"
-    };
-
-    const div = document.createElement("div");
-    div.className = `fixed bottom-5 right-5 ${colors[type]} text-white px-4 py-3 rounded-xl shadow-lg z-50`;
-    div.innerText = message;
-
-    document.body.appendChild(div);
-
-    setTimeout(() => div.remove(), 4000);
-}
-supabaseClient
-  .channel('bookings-channel')
-  .on('postgres_changes',
-    { event: '*', schema: 'public', table: 'bookings' },
-    (payload) => {
-    console.log("Realtime working", payload);
-    const newData = payload.new;
-
-    if (!newData) return;
-
-    // ✅ Visit completed
-    if (newData.status === 'completed' && newData.id !== lastCompletedId) {
-        lastCompletedId = newData.id;
-        showCompletionPopup();
-        playSound();
-    }
-
-    // 🚨 Your turn next (queue = 1)
-    if (newData.queue_number === 1 && newData.status === 'waiting') {
-        alert("🚨 It's your turn! Please get ready.");
-        playSound();
-    }
-    
-    renderBookings();
-    renderQueueStatus();
-} )
-  .subscribe();
-  
-window.onload = init;
+        }
+
+        // Compute live doctor queue metrics
+        function getDoctorQueueMetrics(doctorId) {
+            const docBookings = activeBookingsData.filter(b => b.doctor_id == doctorId);
+            const waitingCount = docBookings.filter(b => b.status === 'waiting').length;
+            const inConsultationCount = docBookings.filter(b => b.status === 'in_consultation').length;
+            const totalActive = waitingCount + inConsultationCount;
+            
+            // 10 minutes average per waiting patient + 5 mins for current session
+            const estimatedWaitMinutes = (waitingCount * 10) + (inConsultationCount > 0 ? 5 : 0);
+
+            let crowdStatus = "Low";
+            let crowdBadgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+            if (totalActive >= 4) {
+                crowdStatus = "High";
+                crowdBadgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+            } else if (totalActive >= 2) {
+                crowdStatus = "Moderate";
+                crowdBadgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+            }
+
+            return {
+                waitingCount,
+                inConsultationCount,
+                totalActive,
+                estimatedWaitMinutes,
+                crowdStatus,
+                crowdBadgeClass
+            };
+        }
+
+        // Compute hospital crowd metrics from doctor active bookings
+        function getHospitalQueueMetrics(hospitalId, hospitalCity) {
+            const docs = allDoctors.filter(d => 
+                d.hospital_id == hospitalId || 
+                (d.location && hospitalCity && d.location.toLowerCase() === hospitalCity.toLowerCase())
+            );
+            
+            let totalWaiting = 0;
+            let totalInConsultation = 0;
+
+            docs.forEach(d => {
+                const metrics = getDoctorQueueMetrics(d.id);
+                totalWaiting += metrics.waitingCount;
+                totalInConsultation += metrics.inConsultationCount;
+            });
+
+            const totalActive = totalWaiting + totalInConsultation;
+
+            let level = "Low Crowd";
+            let badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+            if (totalActive >= 6) {
+                level = "High Crowd";
+                badgeClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+            } else if (totalActive >= 3) {
+                level = "Moderate Crowd";
+                badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+            }
+
+            return {
+                doctorCount: docs.length,
+                totalActive,
+                level,
+                badgeClass
+            };
+        }
+
+        // 7. GEOLOCATION & NEAR ME LOGIC
+        function getUserLocation() {
+            const banner = document.getElementById("location-status-banner");
+            const text = document.getElementById("location-status-text");
+
+            if (!navigator.geolocation) {
+                if (banner && text) {
+                    banner.classList.remove("hidden");
+                    text.innerText = "Geolocation is not supported by your browser. Showing all hospitals.";
+                }
+                setHospitalDiscoveryMode("explore");
+                return;
+            }
+
+            if (banner && text) {
+                banner.classList.remove("hidden");
+                text.innerText = "Locating nearby hospitals via GPS...";
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userCoordinates = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude
+                    };
+                    if (text) {
+                        text.innerText = `Location active (${userCoordinates.lat.toFixed(2)}°, ${userCoordinates.lng.toFixed(2)}°). Hospitals sorted by proximity.`;
+                    }
+                    setHospitalDiscoveryMode("near_me");
+                },
+                (err) => {
+                    console.warn("Geolocation denied or error:", err);
+                    if (text) {
+                        text.innerText = "Location permission denied. Showing sample/explore hospitals.";
+                    }
+                    setHospitalDiscoveryMode("explore");
+                },
+                { timeout: 8000, enableHighAccuracy: true }
+            );
+        }
+
+        function setHospitalDiscoveryMode(mode) {
+            discoveryMode = mode;
+            const btnNear = document.getElementById("btn-mode-near");
+            const btnExplore = document.getElementById("btn-mode-explore");
+
+            if (mode === "near_me") {
+                if (btnNear) {
+                    btnNear.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-blue-600 text-white shadow";
+                }
+                if (btnExplore) {
+                    btnExplore.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
+                }
+
+                if (!userCoordinates) {
+                    getUserLocation();
+                    return;
+                }
+
+                // Sort hospitals by calculated distance
+                displayedHospitals = [...allHospitals].map(h => {
+                    const dist = calculateDistance(userCoordinates.lat, userCoordinates.lng, h.lat, h.lng);
+                    return { ...h, distance: dist };
+                }).sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
+
+            } else {
+                if (btnNear) {
+                    btnNear.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
+                }
+                if (btnExplore) {
+                    btnExplore.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition bg-blue-600 text-white shadow";
+                }
+
+                displayedHospitals = [...allHospitals];
+            }
+
+            renderHospitals();
+        }
+
+        // 8. RENDER HOSPITAL CARDS
+        function renderHospitals() {
+            const grid = document.getElementById("hospital-grid");
+            const emptyState = document.getElementById("hospital-empty-state");
+            const query = document.getElementById("searchInput").value.trim().toLowerCase();
+
+            let list = displayedHospitals.filter(h => {
+                if (!query) return true;
+                return (
+                    h.name.toLowerCase().includes(query) ||
+                    h.city.toLowerCase().includes(query) ||
+                    (h.state && h.state.toLowerCase().includes(query)) ||
+                    (h.address && h.address.toLowerCase().includes(query))
+                );
+            });
+
+            if (list.length === 0) {
+                grid.innerHTML = "";
+                if (emptyState) emptyState.classList.remove("hidden");
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add("hidden");
+
+            grid.innerHTML = list.map(h => {
+                const metrics = getHospitalQueueMetrics(h.id, h.city);
+                
+                // Determine distance display
+                let distanceBadge = "";
+                if (userCoordinates && h.lat && h.lng) {
+                    const dist = calculateDistance(userCoordinates.lat, userCoordinates.lng, h.lat, h.lng);
+                    distanceBadge = `
+                        <span class="flex items-center gap-1 text-[11px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                            <i data-lucide="map-pin" class="w-3 h-3"></i> ${dist} km away
+                        </span>
+                    `;
+                } else {
+                    distanceBadge = `
+                        <span class="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
+                            <i data-lucide="map-pin" class="w-3 h-3"></i> ${h.city}
+                        </span>
+                    `;
+                }
+
+                return `
+                    <div class="glass-card rounded-2xl overflow-hidden flex flex-col justify-between group">
+                        
+                        <!-- Card Image / Header Banner -->
+                        <div class="h-36 relative overflow-hidden bg-slate-800">
+                            <img src="${h.image}" alt="${h.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-80 group-hover:opacity-100"/>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                            
+                            <!-- Badges on image -->
+                            <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                                ${distanceBadge}
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${metrics.badgeClass}">
+                                    ${metrics.level} (${metrics.totalActive} in queue)
+                                </span>
+                            </div>
+
+                            <!-- Name over gradient -->
+                            <div class="absolute bottom-3 left-3 right-3">
+                                <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition leading-snug truncate">
+                                    ${highlightSearch(h.name, query)}
+                                </h3>
+                                <p class="text-xs text-slate-300 truncate">${h.address || h.city}</p>
+                            </div>
+                        </div>
+
+                        <!-- Card Body Details -->
+                        <div class="p-4 flex-1 flex flex-col justify-between space-y-4">
+                            
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                    <p class="text-[10px] text-slate-400">Available Doctors</p>
+                                    <p class="text-sm font-bold text-slate-200 mt-0.5 flex items-center gap-1">
+                                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-blue-400"></i>
+                                        ${metrics.doctorCount} Doctors
+                                    </p>
+                                </div>
+                                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                    <p class="text-[10px] text-slate-400">Active Queue</p>
+                                    <p class="text-sm font-bold text-slate-200 mt-0.5 flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+                                        ${metrics.totalActive} Patients
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Action Button -->
+                            <button onclick="selectHospital(${h.id})" 
+                                class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-sm group-hover:shadow-md">
+                                <span>View Doctors</span>
+                                <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"></i>
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // 9. HOSPITAL SELECTION & TRANSITION TO DOCTOR VIEW
+        function selectHospital(hospitalId) {
+            selectedHospital = allHospitals.find(h => h.id == hospitalId);
+            if (!selectedHospital) return;
+
+            // Update Breadcrumb & Context
+            document.getElementById("step-pill-1").className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium flex items-center gap-1.5";
+            document.getElementById("step-pill-2").className = "px-2.5 py-1 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-1.5 shadow-sm";
+            document.getElementById("step-pill-3").className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium flex items-center gap-1.5";
+
+            const contextTag = document.getElementById("hospital-context-tag");
+            const activeHospName = document.getElementById("active-hospital-name");
+            if (contextTag) contextTag.classList.remove("hidden");
+            if (activeHospName) activeHospName.innerText = selectedHospital.name;
+
+            // Switch UI Sections
+            document.getElementById("hospital-discovery-section").classList.add("hidden");
+            document.getElementById("doctor-selection-section").classList.remove("hidden");
+
+            // Update Selected Hospital Banner Info
+            document.getElementById("active-hosp-title").innerText = selectedHospital.name;
+            document.getElementById("active-hosp-address").innerText = selectedHospital.address || selectedHospital.city;
+            
+            const metrics = getHospitalQueueMetrics(selectedHospital.id, selectedHospital.city);
+            const crowdBadge = document.getElementById("active-hosp-crowd-badge");
+            if (crowdBadge) {
+                crowdBadge.innerText = `${metrics.level} • ${metrics.totalActive} in Queue`;
+                crowdBadge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${metrics.badgeClass}`;
+            }
+
+            // Filter Doctors for this Hospital
+            hospitalDoctors = allDoctors.filter(d => 
+                d.hospital_id == selectedHospital.id ||
+                (d.location && selectedHospital.city && d.location.toLowerCase() === selectedHospital.city.toLowerCase())
+            );
+
+            // Populate Specialisation Chips
+            populateSpecialisationChips();
+
+            // Default to 'All' specialisations
+            selectedSpecialisation = "All";
+            applyDoctorFilters();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetToHospitalList() {
+            selectedHospital = null;
+            selectedDoctor = null;
+            closeBooking();
+
+            document.getElementById("step-pill-1").className = "px-2.5 py-1 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-1.5 shadow-sm";
+            document.getElementById("step-pill-2").className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium flex items-center gap-1.5";
+            document.getElementById("step-pill-3").className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium flex items-center gap-1.5";
+
+            const contextTag = document.getElementById("hospital-context-tag");
+            if (contextTag) contextTag.classList.add("hidden");
+
+            document.getElementById("doctor-selection-section").classList.add("hidden");
+            document.getElementById("hospital-discovery-section").classList.remove("hidden");
+
+            renderHospitals();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // 10. SPECIALISATIONS & CHIPS
+        const SPECIALTY_ICONS = {
+            "All": "sparkles",
+            "Cardiologist": "heart-pulse",
+            "Neurologist": "brain",
+            "General Physician": "stethoscope",
+            "Dermatologist": "sparkle",
+            "Orthopedic": "activity",
+            "ENT": "ear",
+            "Pediatrician": "baby",
+            "Gynecologist": "flower-2"
+        };
+
+        function populateSpecialisationChips() {
+            const container = document.getElementById("specialisation-chips");
+            if (!container) return;
+
+            // Extract unique specialties from current hospital's doctors
+            const specs = Array.from(new Set(hospitalDoctors.map(d => d.spec)));
+            const allSpecs = ["All", ...specs];
+
+            container.innerHTML = allSpecs.map(spec => {
+                const iconName = SPECIALTY_ICONS[spec] || "stethoscope";
+                const isSelected = (spec === selectedSpecialisation);
+                const count = spec === "All" ? hospitalDoctors.length : hospitalDoctors.filter(d => d.spec === spec).length;
+
+                return `
+                    <button onclick="selectSpecialisation('${spec}')" 
+                        class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 border ${
+                            isSelected 
+                                ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20' 
+                                : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-800 hover:border-slate-700'
+                        }">
+                        <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i>
+                        <span>${spec}</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'}">
+                            ${count}
+                        </span>
+                    </button>
+                `;
+            }).join('');
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function selectSpecialisation(spec) {
+            selectedSpecialisation = spec;
+            populateSpecialisationChips();
+            applyDoctorFilters();
+        }
+
+        // 11. SMART EXPLAINABLE RECOMMENDATION LOGIC
+        function computeRecommendationScore(doctor, targetSpec) {
+            let score = 0;
+            let highlights = [];
+
+            // Rule 1: Specialisation Match (Mandatory check)
+            const matchesSpec = (
+                !targetSpec || 
+                targetSpec === "All" || 
+                doctor.spec.toLowerCase().includes(targetSpec.toLowerCase()) || 
+                targetSpec.toLowerCase().includes(doctor.spec.toLowerCase())
+            );
+
+            if (!matchesSpec) {
+                return { score: -1, isEligible: false, reason: "Specialisation mismatch" };
+            }
+            score += 100;
+
+            // Rule 2: Doctor Availability
+            if (doctor.isAvailable !== false) {
+                score += 30;
+            }
+
+            // Rule 3: Lower Current Queue
+            const metrics = getDoctorQueueMetrics(doctor.id);
+            const queueCount = metrics.totalActive;
+            const queueScore = Math.max(0, 50 - (queueCount * 10));
+            score += queueScore;
+
+            if (queueCount === 0) {
+                highlights.push("zero waiting queue");
+            } else if (queueCount <= 2) {
+                highlights.push(`shorter queue (${queueCount} waiting)`);
+            } else {
+                highlights.push(`manageable queue (${queueCount} active)`);
+            }
+
+            // Rule 4: Lower Estimated Wait Time
+            const waitTime = metrics.estimatedWaitMinutes;
+            const waitScore = Math.max(0, 30 - Math.floor(waitTime / 2));
+            score += waitScore;
+
+            if (waitTime <= 5) {
+                highlights.push("immediate consultation availability (~5 min wait)");
+            } else {
+                highlights.push(`estimated wait of only ~${waitTime} mins`);
+            }
+
+            // Rule 5: Workload & Rating Bonus
+            const ratingScore = (doctor.rating || 4.5) * 4;
+            score += ratingScore;
+            if ((doctor.rating || 0) >= 4.8) {
+                highlights.push("top patient rating");
+            }
+
+            const reasonText = `Recommended because Dr. ${doctor.name.replace("Dr. ", "")} matches your specialisation (${doctor.spec}) and currently has ${highlights.join(", ")}.`;
+
+            return {
+                score: Math.round(score),
+                isEligible: true,
+                reason: reasonText,
+                metrics
+            };
+        }
+
+        // 12. APPLY DOCTOR FILTERS & RENDER DOCTORS
+        function applyDoctorFilters() {
+            const query = document.getElementById("searchInput").value.trim().toLowerCase();
+            const ratingFilter = document.getElementById("ratingFilter")?.value || "All";
+            const feeFilter = document.getElementById("feeFilter")?.value || "Default";
+            const crowdFilter = document.getElementById("crowdFilter")?.value || "All";
+
+            // Filter by Specialisation & Search
+            let docs = hospitalDoctors.filter(doc => {
+                const matchesSpec = (
+                    selectedSpecialisation === "All" ||
+                    doc.spec.toLowerCase() === selectedSpecialisation.toLowerCase()
+                );
+
+                const matchesSearch = !query || (
+                    doc.name.toLowerCase().includes(query) ||
+                    doc.spec.toLowerCase().includes(query)
+                );
+
+                let matchesRating = true;
+                if (ratingFilter === "5.0 Only") matchesRating = doc.rating === 5;
+                else if (ratingFilter === "Rating (4.0+)") matchesRating = doc.rating >= 4.0;
+
+                const metrics = getDoctorQueueMetrics(doc.id);
+                let matchesCrowd = true;
+                if (crowdFilter === "Crowd: Low") matchesCrowd = metrics.totalActive <= 2;
+                else if (crowdFilter === "Crowd: Medium") matchesCrowd = metrics.totalActive > 2;
+
+                return matchesSpec && matchesSearch && matchesRating && matchesCrowd;
+            });
+
+            // Calculate Recommendation Score for each Doctor
+            docs = docs.map(doc => {
+                const rec = computeRecommendationScore(doc, selectedSpecialisation);
+                return {
+                    ...doc,
+                    score: rec.score,
+                    recommendationReason: rec.reason,
+                    metrics: rec.metrics
+                };
+            });
+
+            // Sorting: Top recommended first, with fee sorts taking precedence if selected
+            if (feeFilter === "Fee: Low to High") {
+                docs.sort((a, b) => a.fee - b.fee);
+            } else if (feeFilter === "Fee: High to Low") {
+                docs.sort((a, b) => b.fee - a.fee);
+            } else {
+                docs.sort((a, b) => b.score - a.score);
+            }
+
+            filteredDoctors = docs;
+            renderDoctors();
+        }
+
+        function clearDoctorFilters() {
+            if (document.getElementById("ratingFilter")) document.getElementById("ratingFilter").value = "All";
+            if (document.getElementById("feeFilter")) document.getElementById("feeFilter").value = "Default";
+            if (document.getElementById("crowdFilter")) document.getElementById("crowdFilter").value = "All";
+            selectedSpecialisation = "All";
+            populateSpecialisationChips();
+            applyDoctorFilters();
+        }
+
+        // 13. RENDER DOCTOR CARDS WITH BEST MATCH BADGE
+        function renderDoctors() {
+            const grid = document.getElementById("doctor-grid");
+            const emptyState = document.getElementById("doctor-empty-state");
+            const countBadge = document.getElementById("doctor-count-badge");
+            const specBadge = document.getElementById("specialisation-count-badge");
+
+            if (countBadge) countBadge.innerText = `${filteredDoctors.length} Doctors Available`;
+            if (specBadge) specBadge.innerText = selectedSpecialisation === "All" ? "Showing all specialities" : `Filtered: ${selectedSpecialisation}`;
+
+            if (filteredDoctors.length === 0) {
+                grid.innerHTML = "";
+                if (emptyState) emptyState.classList.remove("hidden");
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add("hidden");
+
+            // Identify best match doctor (first doctor with highest score)
+            const highestScore = Math.max(...filteredDoctors.map(d => d.score));
+            const bestDoctorId = highestScore > 0 ? filteredDoctors.find(d => d.score === highestScore)?.id : null;
+
+            grid.innerHTML = filteredDoctors.map((doc, idx) => {
+                const isBestMatch = (doc.id === bestDoctorId && highestScore > 100);
+                const query = document.getElementById("searchInput").value.trim();
+                const metrics = doc.metrics || getDoctorQueueMetrics(doc.id);
+                const initials = doc.name.replace("Dr. ", "").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+
+                return `
+                    <div class="glass-card rounded-2xl p-5 flex flex-col justify-between relative group ${
+                        isBestMatch ? 'glass-highlight ring-1 ring-amber-400/40' : ''
+                    }">
+                        
+                        <!-- ⭐ BEST MATCH RIBBON -->
+                        ${isBestMatch ? `
+                            <div class="absolute -top-3 left-4 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-extrabold text-[11px] px-3 py-0.5 rounded-full flex items-center gap-1 shadow-lg shadow-amber-500/20">
+                                <span>⭐ Best Match</span>
+                            </div>
+                        ` : ''}
+
+                        <div>
+                            <!-- Doctor Header -->
+                            <div class="flex items-start justify-between gap-3 mb-3 ${isBestMatch ? 'mt-2' : ''}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
+                                        ${initials}
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white group-hover:text-blue-400 transition leading-snug">
+                                            ${highlightSearch(doc.name, query)}
+                                        </h4>
+                                        <span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 mt-0.5">
+                                            ${highlightSearch(doc.spec, query)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="text-right shrink-0">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${metrics.crowdBadgeClass}">
+                                        ${metrics.crowdStatus} Crowd
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Explainable Recommendation Reason Box -->
+                            ${isBestMatch ? `
+                                <div class="my-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i>
+                                    <span>${doc.recommendationReason}</span>
+                                </div>
+                            ` : ''}
+
+                            <!-- Real Queue & Telemetry Stats -->
+                            <div class="grid grid-cols-2 gap-2 my-3 text-xs">
+                                <div class="bg-slate-900/70 p-2.5 rounded-xl border border-slate-800">
+                                    <p class="text-[10px] text-slate-400">Current Queue</p>
+                                    <p class="text-xs font-bold text-slate-200 mt-0.5 flex items-center gap-1">
+                                        <i data-lucide="users" class="w-3.5 h-3.5 text-blue-400"></i>
+                                        ${metrics.totalActive} Patients
+                                    </p>
+                                </div>
+                                <div class="bg-slate-900/70 p-2.5 rounded-xl border border-slate-800">
+                                    <p class="text-[10px] text-slate-400">Est. Wait Time</p>
+                                    <p class="text-xs font-bold text-emerald-400 mt-0.5 flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                        ~${metrics.estimatedWaitMinutes} mins
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Rating & Fee -->
+                            <div class="flex items-center justify-between text-xs py-2 border-t border-slate-800/80 mb-3">
+                                <div class="flex items-center gap-1 text-amber-400 font-bold">
+                                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                                    <span>${doc.rating}</span>
+                                    <span class="text-slate-500 font-normal">(Verified)</span>
+                                </div>
+                                <div class="font-bold text-white text-sm">
+                                    ₹${doc.fee}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button onclick="openBooking(${doc.id})" 
+                            class="w-full py-2.5 px-4 ${
+                                isBestMatch 
+                                    ? 'bg-blue-600 hover:bg-blue-500 text-white font-bold' 
+                                    : 'bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-200 font-semibold'
+                            } text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                            <span>Select Doctor</span>
+                        </button>
+
+                    </div>
+                `;
+            }).join('');
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // 14. BOOKING PANEL WORKFLOW
+        function openBooking(docId) {
+            selectedDoctor = allDoctors.find(d => d.id == docId);
+            if (!selectedDoctor) {
+                alert("Doctor not found");
+                return;
+            }
+
+            // Update Breadcrumbs
+            document.getElementById("step-pill-3").className = "px-2.5 py-1 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-1.5 shadow-sm";
+
+            document.getElementById('booking-content-empty').classList.add('hidden');
+            document.getElementById('booking-content-active').classList.remove('hidden');
+
+            const metrics = getDoctorQueueMetrics(selectedDoctor.id);
+
+            document.getElementById('selected-doc-info').innerHTML = `
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-lg bg-blue-600/30 flex items-center justify-center text-blue-400 font-bold text-xs">
+                        ${selectedDoctor.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-white">${selectedDoctor.name}</p>
+                        <p class="text-xs text-blue-300 font-medium">${selectedDoctor.spec}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-blue-500/20">
+                    <span>Active Queue: <strong>${metrics.totalActive} waiting</strong></span>
+                    <span>Est. Wait: <strong>~${metrics.estimatedWaitMinutes}m</strong></span>
+                </div>
+            `;
+
+            document.getElementById('summary-fee').innerText = `₹${selectedDoctor.fee}`;
+            document.getElementById('summary-total').innerText = `₹${selectedDoctor.fee}`;
+
+            const times = ["09:00 AM", "10:30 AM", "12:00 PM", "02:30 PM", "04:00 PM", "05:30 PM"];
+            const slotsDiv = document.getElementById('time-slots');
+
+            slotsDiv.innerHTML = times.map((t, i) => `
+                <button onclick="selectTime('${t}', this)" class="slot-btn border border-slate-700 bg-slate-900/80 hover:border-blue-500 text-slate-300 text-xs py-2 px-1 rounded-lg font-medium transition ${i === 0 ? 'bg-blue-600/20 border-blue-500 text-white' : ''}">
+                    ${t}
+                </button>
+            `).join('');
+
+            // Preselect first slot
+            selectedTime = times[0];
+
+            // On mobile / small screens, scroll to booking panel or notify
+            const panel = document.getElementById('booking-panel');
+            if (panel && window.innerWidth < 1024) {
+                panel.classList.remove("hidden");
+                panel.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function selectTime(time, el) {
+            selectedTime = time;
+            document.querySelectorAll('.slot-btn').forEach(btn => {
+                btn.className = 'slot-btn border border-slate-700 bg-slate-900/80 hover:border-blue-500 text-slate-300 text-xs py-2 px-1 rounded-lg font-medium transition';
+            });
+            el.className = 'slot-btn border border-blue-500 bg-blue-600 text-white text-xs py-2 px-1 rounded-lg font-bold transition shadow-sm';
+        }
+
+        function closeBooking() {
+            document.getElementById('booking-content-active').classList.add('hidden');
+            document.getElementById('booking-content-empty').classList.remove('hidden');
+            selectedDoctor = null;
+            selectedTime = null;
+
+            if (window.innerWidth < 1024) {
+                const panel = document.getElementById('booking-panel');
+                if (panel) panel.classList.add("hidden");
+            }
+        }
+
+        async function confirmBooking() {
+            if (!selectedDoctor) {
+                alert("Please select a doctor first");
+                return;
+            }
+
+            if (!selectedTime) {
+                alert("Please select an appointment time slot");
+                return;
+            }
+
+            const patientName = localStorage.getItem("username") || "Patient";
+
+            // Step 1: Calculate active queue number for this doctor
+            let activeCount = 0;
+            if (supabaseClient) {
+                try {
+                    const { data: existing, error: fetchError } = await supabaseClient
+                        .from('bookings')
+                        .select('id, status')
+                        .eq('doctor_id', selectedDoctor.id)
+                        .in('status', ['waiting', 'in_consultation']);
+
+                    if (!fetchError && existing) {
+                        activeCount = existing.length;
+                    }
+                } catch (err) {
+                    console.warn("Queue calculation error:", err);
+                }
+            }
+
+            const queueNumber = activeCount + 1;
+
+            // Step 2: Insert booking to Supabase
+            if (supabaseClient) {
+                const { error } = await supabaseClient
+                    .from('bookings')
+                    .insert([{
+                        doctor_id: selectedDoctor.id,
+                        doctor_name: selectedDoctor.name,
+                        patient_name: patientName,
+                        date: "Today",
+                        time: selectedTime,
+                        status: "waiting",
+                        queue_number: queueNumber,
+                        priority: selectedDoctor.isEmergency ? 3 : 2,
+                        started_at: null,
+                        ended_at: null,
+                        actual_time: 5
+                    }]);
+
+                if (error) {
+                    console.error("Booking error:", error);
+                    alert("Error saving booking: " + error.message);
+                    return;
+                }
+            }
+
+            smartNotify(`Booking confirmed for ${selectedDoctor.name}! Queue position: #${queueNumber}`, "success");
+            playSound();
+
+            closeBooking();
+            await fetchActiveBookings();
+            renderDoctors();
+            await renderBookings();
+        }
+
+        // 15. BOOKING STATUS & LIVE QUEUE PAGES (PRESERVED & ENHANCED)
+        async function renderBookings() {
+            const patientName = localStorage.getItem("username") || "Patient";
+            const list = document.getElementById('bookings-list');
+            if (!list) return;
+
+            let bookings = [];
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('bookings')
+                        .select('*')
+                        .eq('patient_name', patientName)
+                        .neq('status', 'completed')
+                        .neq('status', 'cancelled')
+                        .order('id', { ascending: false });
+
+                    if (!error && data) {
+                        bookings = data;
+                    }
+                } catch (e) {
+                    console.warn("Error fetching user bookings:", e);
+                }
+            }
+
+            if (bookings.length === 0) {
+                list.innerHTML = `
+                    <div class="glass p-8 rounded-2xl text-center">
+                        <i data-lucide="calendar-x" class="w-10 h-10 mx-auto text-slate-500 mb-2"></i>
+                        <h4 class="text-sm font-bold text-white">No Active Appointments</h4>
+                        <p class="text-xs text-slate-400 mt-1">Book an appointment from the Find & Book tab to view live status.</p>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            list.innerHTML = bookings.map(b => `
+                <div class="glass-card p-5 rounded-2xl border border-slate-800 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm">
+                            #${b.queue_number}
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white">${b.doctor_name}</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">${b.date} • Slot: ${b.time}</p>
+                            <p class="text-[11px] text-blue-300 font-medium mt-1">Position in Queue: #${b.queue_number}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${
+                            b.status === 'waiting' 
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
+                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                        }">
+                            ${b.status === 'waiting' ? '⏳ Waiting in Queue' : '🩺 In Consultation'}
+                        </span>
+
+                        ${b.status === 'waiting' ? `
+                            <button onclick="openCancelModal(${b.id})" class="text-xs text-rose-400 hover:text-rose-300 hover:underline transition">
+                                Cancel Appointment
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function renderQueueStatus() {
+            const patientName = localStorage.getItem("username") || "Patient";
+            const container = document.getElementById('queue-container');
+            if (!container) return;
+
+            if (!supabaseClient) {
+                container.innerHTML = `<p class="text-slate-400 text-center text-xs">Supabase connection not active</p>`;
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('bookings')
+                .select('*')
+                .eq('patient_name', patientName)
+                .neq('status', 'cancelled')
+                .neq('status', 'completed')
+                .order('priority', { ascending: false })
+                .order('queue_number', { ascending: true });
+
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="glass p-8 rounded-2xl text-center">
+                        <i data-lucide="clock" class="w-10 h-10 mx-auto text-slate-500 mb-2"></i>
+                        <h4 class="text-sm font-bold text-white">No Live Consultations in Queue</h4>
+                        <p class="text-xs text-slate-400 mt-1">When you confirm an appointment, real-time queue flow will appear here.</p>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            // Remove duplicate doctor rows for this patient
+            const uniqueDoctors = data.filter((booking, index, self) =>
+                index === self.findIndex(x => x.doctor_id === booking.doctor_id)
+            );
+
+            container.innerHTML = uniqueDoctors.map(b => {
+                const doctorQueue = data
+                    .filter(x => x.doctor_id === b.doctor_id)
+                    .sort((a, b) => a.queue_number - b.queue_number);
+
+                const index = doctorQueue.findIndex(x => x.id === b.id);
+                const ahead = index >= 0 ? index : 0;
+                const total = Math.max(doctorQueue.length, 1);
+                const progress = Math.min(100, Math.round(((total - ahead) / total) * 100));
+
+                let waitTime = 0;
+                for (let i = 0; i < ahead; i++) {
+                    const prev = doctorQueue[i];
+                    let time = prev.actual_time || 5;
+                    time = Math.min((time + 5) / 2, 10);
+                    if (prev.is_emergency) time += 5;
+                    waitTime += time;
+                }
+
+                const arrivalTime = new Date(Date.now() + (waitTime + 5) * 60000)
+                    .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                let reason = "Doctor is currently consulting patients in queue.";
+                if (b.is_emergency) reason = "Emergency case is being given priority care.";
+
+                // Audio Voice Notification when Turn is Next
+                if (ahead === 1 && !voicePlayed) {
+                    speak("You are next in queue. Please get ready.");
+                    voicePlayed = true;
+                }
+                if (ahead > 1) voicePlayed = false;
+
+                return `
+                    <div class="glass-card p-6 rounded-2xl border border-blue-500/30">
+                        
+                        <!-- Header -->
+                        <div class="flex items-center justify-between gap-4 mb-5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow">
+                                    ${b.doctor_name.split(" ")[1]?.charAt(0) || "DR"}
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-white">${b.doctor_name}</h3>
+                                    <p class="text-xs text-slate-400">Queue Position #${b.queue_number} • Consultation in progress</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 badge-pulse"></span> Live
+                            </span>
+                        </div>
+
+                        <!-- Visual Queue Track -->
+                        <div class="flex items-center justify-center gap-2 mb-5 flex-wrap">
+                            ${Array.from({ length: total }).map((_, i) => {
+                                if (i < ahead) {
+                                    return `<div class="w-8 h-8 rounded-full bg-slate-700/60 flex items-center justify-center text-xs text-slate-400 opacity-60">👤</div>`;
+                                } else if (i === ahead) {
+                                    return `<div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white text-base font-bold heartbeat shadow-lg shadow-emerald-500/30">🧑‍⚕️</div>`;
+                                } else {
+                                    return `<div class="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs text-blue-300 queue-dot">⏳</div>`;
+                                }
+                            }).join('')}
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-800 rounded-full h-2.5 mb-5 overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-500 to-emerald-400 h-2.5 rounded-full transition-all duration-700" style="width: ${progress}%"></div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-3 gap-3 text-center text-xs">
+                            <div class="glass p-3 rounded-xl">
+                                <p class="text-slate-400 text-[10px]">Patients Ahead</p>
+                                <p class="text-lg font-bold text-white mt-0.5">${ahead}</p>
+                            </div>
+                            <div class="glass p-3 rounded-xl">
+                                <p class="text-slate-400 text-[10px]">Est. Call Time</p>
+                                <p class="text-sm font-bold text-emerald-400 mt-1">${arrivalTime}</p>
+                            </div>
+                            <div class="glass p-3 rounded-xl">
+                                <p class="text-slate-400 text-[10px]">Current Status</p>
+                                <p class="text-sm font-bold text-blue-300 mt-1">${b.status === 'waiting' ? 'Waiting' : 'In Room'}</p>
+                            </div>
+                        </div>
+
+                        <!-- Informational reason -->
+                        <div class="mt-4 text-center text-xs text-blue-300/80 italic">
+                            💡 ${reason}
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // 16. CANCELLATION & MODAL LOGIC
+        function openCancelModal(id) {
+            cancelId = id;
+            document.getElementById("cancel-modal").classList.remove("hidden");
+        }
+
+        function closeCancelModal() {
+            document.getElementById("cancel-modal").classList.add("hidden");
+            const chk = document.getElementById("confirm-cancel");
+            if (chk) chk.checked = false;
+            const custom = document.getElementById("custom-reason");
+            if (custom) custom.value = "";
+        }
+
+        async function finalCancel() {
+            const checkbox = document.getElementById("confirm-cancel")?.checked;
+            const reason = document.getElementById("cancel-reason")?.value || "Cancelled by patient";
+            const custom = document.getElementById("custom-reason")?.value || "";
+
+            if (!checkbox) {
+                alert("Please check the confirmation box to proceed.");
+                return;
+            }
+
+            if (!cancelId || !supabaseClient) return;
+
+            const { data: booking } = await supabaseClient
+                .from('bookings')
+                .select('*')
+                .eq('id', cancelId)
+                .single();
+
+            if (!booking) return;
+
+            if (booking.status === "in_consultation") {
+                alert("Cannot cancel while consultation is actively in progress.");
+                return;
+            }
+
+            const finalReason = custom.trim() !== "" ? custom : reason;
+            await processCancellation(booking, finalReason);
+            closeCancelModal();
+        }
+
+        async function processCancellation(booking, reason) {
+            const doctorId = booking.doctor_id;
+            const cancelledQueue = booking.queue_number;
+
+            // 1. Mark booking as cancelled
+            await supabaseClient
+                .from('bookings')
+                .update({ 
+                    status: 'cancelled',
+                    cancel_reason: reason
+                })
+                .eq('id', booking.id);
+
+            // 2. Shift subsequent queue positions
+            const { data: others } = await supabaseClient
+                .from('bookings')
+                .select('*')
+                .eq('doctor_id', doctorId)
+                .gt('queue_number', cancelledQueue)
+                .neq('status', 'cancelled');
+
+            if (others && others.length > 0) {
+                for (let b of others) {
+                    await supabaseClient
+                        .from('bookings')
+                        .update({ queue_number: b.queue_number - 1 })
+                        .eq('id', b.id);
+                }
+            }
+
+            smartNotify("Appointment cancelled and queue shifted successfully.", "warning");
+            await fetchActiveBookings();
+            renderDoctors();
+            await renderBookings();
+            await renderQueueStatus();
+        }
+
+        // 17. ANALYTICS & STATS
+        async function loadAnalytics() {
+            if (!supabaseClient) return;
+            try {
+                const { data } = await supabaseClient
+                    .from('bookings')
+                    .select('*');
+
+                if (data) {
+                    const total = data.length;
+                    const completed = data.filter(b => b.status === 'completed');
+                    const active = data.filter(b => b.status === 'waiting' || b.status === 'in_consultation').length;
+                    
+                    let avg = 12.0;
+                    if (completed.length > 0) {
+                        const totalActual = completed.reduce((sum, b) => sum + (b.actual_time || 10), 0);
+                        avg = totalActual / completed.length;
+                    }
+
+                    const elTotal = document.getElementById("totalPatients");
+                    const elAvg = document.getElementById("avgWait");
+                    const elActive = document.getElementById("activePatientsToday");
+
+                    if (elTotal) elTotal.innerText = total;
+                    if (elAvg) elAvg.innerText = (avg > 60 ? (avg / 60).toFixed(1) + " hrs" : Math.round(avg) + " mins");
+                    if (elActive) elActive.innerText = active;
+                }
+            } catch (e) {
+                console.warn("Analytics fetch notice:", e);
+            }
+        }
+
+        // 18. UI HELPERS & NOTIFICATIONS
+        function showPage(page) {
+            const home = document.getElementById('home-page');
+            const status = document.getElementById('status-page');
+            const queue = document.getElementById('queue-page');
+            const analytics = document.getElementById('analytics-page');
+
+            [home, status, queue, analytics].forEach(p => p && p.classList.add('hidden'));
+
+            const navItems = ['nav-home', 'nav-status', 'nav-queue', 'nav-analytics'];
+            navItems.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = "flex items-center gap-3 px-3.5 py-2.5 text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-xl transition font-medium";
+            });
+
+            if (page === 'home') {
+                home?.classList.remove('hidden');
+                document.getElementById('nav-home')?.classList.add('text-blue-400', 'bg-blue-500/10', 'border', 'border-blue-500/20');
+            } else if (page === 'status') {
+                status?.classList.remove('hidden');
+                document.getElementById('nav-status')?.classList.add('text-blue-400', 'bg-blue-500/10', 'border', 'border-blue-500/20');
+                renderBookings();
+            } else if (page === 'queue') {
+                queue?.classList.remove('hidden');
+                document.getElementById('nav-queue')?.classList.add('text-blue-400', 'bg-blue-500/10', 'border', 'border-blue-500/20');
+                renderQueueStatus();
+            } else if (page === 'analytics') {
+                analytics?.classList.remove('hidden');
+                document.getElementById('nav-analytics')?.classList.add('text-blue-400', 'bg-blue-500/10', 'border', 'border-blue-500/20');
+                loadAnalytics();
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function handleGlobalSearch() {
+            if (selectedHospital) {
+                applyDoctorFilters();
+            } else {
+                renderHospitals();
+            }
+        }
+
+        function highlightSearch(text, search) {
+            if (!search || !text) return text;
+            const regex = new RegExp(`(${search})`, 'gi');
+            return text.replace(regex, `<span class="bg-blue-500/30 text-blue-300 rounded px-0.5">$1</span>`);
+        }
+
+        function smartNotify(message, type = "info") {
+            const toast = document.getElementById("toast");
+            const toastText = document.getElementById("toast-text");
+            if (!toast || !toastText) return;
+
+            toastText.innerText = message;
+            toast.classList.remove("translate-y-32");
+            toast.classList.add("translate-y-0");
+
+            setTimeout(() => {
+                toast.classList.add("translate-y-32");
+                toast.classList.remove("translate-y-0");
+            }, 4000);
+        }
+
+        function playSound() {
+            const snd = document.getElementById("notify-sound");
+            if (snd) snd.play().catch(e => console.log("Audio notice:", e));
+        }
+
+        function speak(message) {
+            if (!window.speechSynthesis) return;
+            const speech = new SpeechSynthesisUtterance(message);
+            speech.rate = 1;
+            window.speechSynthesis.speak(speech);
+        }
+
+        function showCompletionPopup() {
+            document.getElementById('completion-popup')?.classList.remove('hidden');
+        }
+
+        function closeCompletionPopup() {
+            document.getElementById('completion-popup')?.classList.add('hidden');
+        }
+
+        // 19. REALTIME SUPABASE SUBSCRIPTION
+        if (supabaseClient) {
+            supabaseClient
+                .channel('patient-live-bookings')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+                    const newData = payload.new;
+                    if (newData && newData.status === 'completed' && newData.id !== lastCompletedId) {
+                        lastCompletedId = newData.id;
+                        showCompletionPopup();
+                        playSound();
+                    }
+
+                    fetchActiveBookings().then(() => {
+                        if (selectedHospital) applyDoctorFilters();
+                        else renderHospitals();
+                        renderBookings();
+                        renderQueueStatus();
+                        loadAnalytics();
+                    });
+                })
+                .subscribe();
+        }
+
+        // Live refresh interval
+        setInterval(() => {
+            fetchActiveBookings().then(() => {
+                if (selectedHospital) applyDoctorFilters();
+                else renderHospitals();
+            });
+        }, 15000);
+
+        window.onload = init;
     </script>
 </body>
-</html
+</html>
