@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    /* Warm Ivory & Natural Healthcare Palette */
+    --bg-main: #F8F5EF;
+    --bg-card: #FFFFFF;
+    --bg-card-alt: #F3EFE6;
+    --bg-subtle: #EFEBE1;
+    
+    --text-primary: #252525;
+    --text-secondary: #5C5852;
+    --text-muted: #8C867D;
+    
+    --border-light: #E8E2D5;
+    --border-medium: #D8D0C2;
+    
+    /* Semantic Healthcare Colors */
+    --color-sage: #6F9F82;
+    --color-sage-bg: #EAF2EC;
+    --color-sage-border: #C8DDD0;
+    --color-sage-text: #2A543B;
+    
+    --color-coral: #E9826E;
+    --color-coral-bg: #FAECE8;
+    --color-coral-border: #F2C4BA;
+    --color-coral-text: #8C301E;
+    
+    --color-yellow: #D9A436;
+    --color-yellow-bg: #FDF7E7;
+    --color-yellow-border: #F5E3B3;
+    --color-yellow-text: #705008;
+    
+    --color-lavender: #8574B3;
+    --color-lavender-bg: #F0EDF7;
+    --color-lavender-border: #D3CBEA;
+    --color-lavender-text: #45376B;
+
+    --color-brand: #2B4C3F;
+    --color-brand-light: #416B5A;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Editorial Card Styling */
+.mediq-card {
+  background: #FFFFFF;
+  border: 1px solid #E8E2D5;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(37, 37, 37, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mediq-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: #D8D0C2;
+  box-shadow: 0 12px 28px -4px rgba(37, 37, 37, 0.08);
+}
+
+.mediq-pill {
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Custom Scrollbar for Warm Palette */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F8F5EF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D8D0C2;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B8B0A2;
+}
