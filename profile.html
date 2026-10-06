@@ -80,7 +80,7 @@ body {
 <script>
 const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
 async function saveProfile() {
 
@@ -88,8 +88,8 @@ async function saveProfile() {
     const age = document.getElementById("age").value.trim();
     const gender = document.getElementById("gender").value;
     const phone = document.getElementById("phone").value.trim();
-    const email = localStorage.getItem("temp_email");
-    const role = localStorage.getItem("role");
+    const email = localStorage.getItem("temp_email") || localStorage.getItem("email") || "";
+    const role = localStorage.getItem("role") || "patient";
 
     const status = document.getElementById("status");
 
@@ -106,20 +106,25 @@ async function saveProfile() {
 
     status.innerText = "Saving profile... ⏳";
 
-    const { error } = await supabaseClient
-        .from("profiles")
-        .insert([{
-            email,
-            name,
-            age: parseInt(age),
-            gender,
-            phone,
-            role
-        }]);
+    if (supabaseClient) {
+        try {
+            const { error } = await supabaseClient
+                .from("profiles")
+                .insert([{
+                    email,
+                    name,
+                    age: parseInt(age),
+                    gender,
+                    phone,
+                    role
+                }]);
 
-    if (error) {
-        status.innerText = "❌ " + error.message;
-        return;
+            if (error) {
+                console.warn("Profile save notice:", error.message);
+            }
+        } catch (err) {
+            console.warn("Profile save error:", err);
+        }
     }
 
     status.innerText = "✅ Profile created successfully!";

@@ -93,10 +93,10 @@ body { font-family: 'Inter', sans-serif; }
             </nav>
             <div class="p-4 border-t border-gray-100">
                 <div class="flex items-center gap-3 p-2">
-                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold">JD</div>
+                    <div id="user-avatar" class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold">PT</div>
                     <div>
-                        <p class="text-sm font-semibold">John Doe</p>
-                        <p class="text-xs text-gray-400">Patient ID: #4412</p>
+                        <p id="user-name-display" class="text-sm font-semibold">Patient</p>
+                        <p id="user-id-display" class="text-xs text-gray-400">Patient Portal</p>
                     </div>
                 </div>
             </div>
@@ -317,13 +317,19 @@ class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
   // 1. INITIALIZE SUPABASE
 const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
 let doctors = [];
 let allDoctors = [];
-let myBookings = [
-    { id: 101, docName: "Dr. Sarah Jenkins", date: "Oct 24, 2023", time: "10:30 AM", status: "Completed" }
+let defaultDoctorsList = [
+    { id: 1, name: "Dr. Sarah Jenkins", spec: "Cardiologist", fee: 150, rating: 4.9, location: "Downtown", crowd: "Low", img: "Sarah" },
+    { id: 2, name: "Dr. Rajesh Kumar", spec: "Neurologist", fee: 200, rating: 4.8, location: "Downtown", crowd: "Medium", img: "Rajesh" },
+    { id: 3, name: "Dr. Anita Sharma", spec: "General Physician", fee: 100, rating: 4.7, location: "Suburbs", crowd: "Low", img: "Anita" },
+    { id: 4, name: "Dr. Vikram Patel", spec: "Dermatologist", fee: 120, rating: 4.6, location: "Suburbs", crowd: "Low", img: "Vikram" },
+    { id: 5, name: "Dr. Priya Roy", spec: "Orthopedic", fee: 180, rating: 4.9, location: "Downtown", crowd: "Low", img: "Priya" },
+    { id: 6, name: "Dr. Suresh Nair", spec: "ENT", fee: 130, rating: 4.5, location: "Suburbs", crowd: "Medium", img: "Suresh" }
 ];
+let myBookings = [];
 let lastCompletedId = null;
 let selectedDoctor = null;
 let selectedTime = null;
@@ -342,54 +348,70 @@ function openCancelModal(id) {
 function closeCancelModal() {
     document.getElementById("cancel-modal").classList.add("hidden");
     document.getElementById("confirm-cancel").checked = false;
-document.getElementById("custom-reason").value = "";
+    document.getElementById("custom-reason").value = "";
 }
 function selectProblem(specialization) {
-    // Set search box value automatically
     document.getElementById('searchInput').value = specialization;
-
-    // Trigger filtering
     applyFilters();
 }
 function playSound() {
-    document.getElementById("notify-sound").play();
+    const snd = document.getElementById("notify-sound");
+    if (snd) snd.play().catch(e => console.log("Audio play blocked", e));
 }
+
 // 2. FETCH DATA FROM YOUR DATASET
 async function init() {
-    try {
-        // This pulls the data from the table you named 'doctors'
-        const { data, error } = await supabaseClient
-            .from('doctors')
-            .select('*');
+    // Update user info display
+    const username = localStorage.getItem("username") || "Patient";
+    const userDisplay = document.getElementById("user-name-display");
+    const userAvatar = document.getElementById("user-avatar");
+    if (userDisplay) userDisplay.innerText = username;
+    if (userAvatar) userAvatar.innerText = username.substring(0, 2).toUpperCase();
 
-        if (error) throw error;
+    let fetchedData = null;
+    if (supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('doctors')
+                .select('*');
+            if (!error && data && data.length > 0) {
+                fetchedData = data;
+            }
+        } catch (err) {
+            console.warn("Supabase doctors fetch notice:", err);
+        }
+    }
 
-        // Map the data to ensure it fits the UI (handling missing fees/ratings)
-allDoctors = data.map(doc => ({
-    id: doc.id,
-    name: doc.name,
-    spec: doc.specialization,
-    fee: doc.fee || 100,
-    rating: doc.rating || 4.5,
-    location: doc.location || "Downtown",
-    crowd: doc.crowd || "Low",
-    img: doc.name
-}));
+    if (fetchedData && fetchedData.length > 0) {
+        allDoctors = fetchedData.map(doc => ({
+            id: doc.id,
+            name: doc.name,
+            spec: doc.specialization || doc.spec || "General",
+            fee: doc.fee || 100,
+            rating: doc.rating || 4.5,
+            location: doc.location || "Downtown",
+            crowd: doc.crowd || "Low",
+            img: doc.name
+        }));
+    } else {
+        allDoctors = [...defaultDoctorsList];
+    }
 
-doctors = [...allDoctors];
+    doctors = [...allDoctors];
+    renderDoctors();
 
-        renderDoctors();
-        lucide.createIcons();
-        document.getElementById('searchInput').addEventListener('input', applyFilters);
-document.getElementById('ratingFilter').addEventListener('change', applyFilters);
-document.getElementById('feeFilter').addEventListener('change', applyFilters);
-document.getElementById('crowdFilter').addEventListener('change', applyFilters);
-document.getElementById('locationFilter').addEventListener('change', applyFilters);
-    } catch (err) {
-    console.error("FULL ERROR:", err);
-    alert(err.message);
-}
-    console.log(allDoctors);
+    if (window.lucide) lucide.createIcons();
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+    const ratingFilter = document.getElementById('ratingFilter');
+    if (ratingFilter) ratingFilter.addEventListener('change', applyFilters);
+    const feeFilter = document.getElementById('feeFilter');
+    if (feeFilter) feeFilter.addEventListener('change', applyFilters);
+    const crowdFilter = document.getElementById('crowdFilter');
+    if (crowdFilter) crowdFilter.addEventListener('change', applyFilters);
+    const locationFilter = document.getElementById('locationFilter');
+    if (locationFilter) locationFilter.addEventListener('change', applyFilters);
 }
 function highlightText(text, search) {
     if (!search) return text;

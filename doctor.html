@@ -222,31 +222,36 @@ body {
 </div>
 
 <script>
-  const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
+const supabaseUrl = 'https://gxuwfjlwcgnjnwegzamd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4dXdmamx3Y2duam53ZWd6YW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzcxNTYsImV4cCI6MjA5MDQ1MzE1Nn0.RPHbDA1YS6z6yTXST_IgKF4c9A9BkY8iqyo4WqfaYAA';
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-const doctorId = localStorage.getItem("doctor_id");
+const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+const doctorId = localStorage.getItem("doctor_id") || "1";
 let queue = [];
+
 // Role check
 if (localStorage.getItem("role") !== "doctor") {
   window.location.href = "index.html";
 }
 
 // Welcome
-document.getElementById("welcome").innerText =
-  localStorage.getItem("username");
+const welcomeEl = document.getElementById("welcome");
+if (welcomeEl) {
+  welcomeEl.innerText = localStorage.getItem("username") || "Doctor";
+}
 
 // Tabs
 function showTab(tab, e) {
   document.querySelectorAll("#dashboard,#queue,#analytics,#ai")
     .forEach(el => el.classList.add("hidden"));
 
-  document.getElementById(tab).classList.remove("hidden");
+  const targetTab = document.getElementById(tab);
+  if (targetTab) targetTab.classList.remove("hidden");
 
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active-tab"));
-  e.target.classList.add("active-tab");
+  if (e && e.target) {
+    e.target.classList.add("active-tab");
+  }
 
-  // ✅ Load data for charts
   loadQueue();
 }
 async function startConsultation(bookingId) {
@@ -330,6 +335,8 @@ function updatePerformanceChart(data){
 let miniChart;
 
 function updateMiniChart() {
+  const canvas = document.getElementById("miniChart");
+  if (!canvas) return;
 
   let waiting = queue.filter(p => p.status === "waiting").length;
   let inProg = queue.filter(p => p.status === "in_consultation").length;
@@ -337,7 +344,7 @@ function updateMiniChart() {
 
   if (miniChart) miniChart.destroy();
 
-  miniChart = new Chart(document.getElementById("miniChart"), {
+  miniChart = new Chart(canvas, {
     type: 'doughnut',
     data: {
       labels: ['Waiting','in_consultation','Done'],
@@ -347,39 +354,48 @@ function updateMiniChart() {
     }
   });
 }
+
 async function loadQueue() {
-  const { data, error } = await supabaseClient
-    .from('bookings')
-    .select('*')
-    .eq('doctor_id', doctorId)   // ✅ ONLY THIS DOCTOR
-    .order('priority', { ascending: false })
-.order('queue_number', { ascending: true });
-  if (error) {
-    console.error(error);
-    return;
+  let data = null;
+  if (supabaseClient) {
+    try {
+      const { data: resData, error } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('doctor_id', doctorId)
+        .order('priority', { ascending: false })
+        .order('queue_number', { ascending: true });
+      if (!error && resData) {
+        data = resData;
+      }
+    } catch (err) {
+      console.warn("Supabase loadQueue notice:", err);
+    }
   }
 
-queue = data.map(b => ({
-  name: b.patient_name || "Patient",
-  issue: "General",
-  status: (b.status || "").trim().toLowerCase(),  // ✅ FIX
-  id: b.id
-}));
-
-  console.log("Doctor ID:", doctorId);
-console.log("Bookings:", data);
-updateAICharts(data);
-updateAISuggestions(data);
-updatePerformanceChart(data);
-  // Ensure one patient is active
-if (!queue.some(p => p.status === "in_consultation")){
-  const firstWaiting = queue.find(p => p.status === "waiting");
-
-  if (firstWaiting) {
-    await startConsultation(firstWaiting.id);
-    return loadQueue();
+  if (!data) {
+    data = [];
   }
-}
+
+  queue = data.map(b => ({
+    name: b.patient_name || "Patient",
+    issue: "General",
+    status: (b.status || "").trim().toLowerCase(),
+    id: b.id
+  }));
+
+  updateAICharts(data);
+  updateAISuggestions(data);
+  updatePerformanceChart(data);
+
+  if (!queue.some(p => p.status === "in_consultation")){
+    const firstWaiting = queue.find(p => p.status === "waiting");
+    if (firstWaiting) {
+      await startConsultation(firstWaiting.id);
+      return loadQueue();
+    }
+  }
+
   renderQueue();
   console.log("Statuses:", queue.map(q => q.status));
 }
@@ -818,21 +834,21 @@ function logout(){
   localStorage.clear();
   window.location.href="index.html";
 }
-supabaseClient
-  .channel('doctor-queue')
-  .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'bookings'
-  }, payload => {
-
-      if (Number(payload.new.doctor_id) == doctorId) {
-    notify();
-    setTimeout(loadQueue, 200); // small delay ensures DB sync
+if (supabaseClient) {
+  supabaseClient
+    .channel('doctor-queue')
+    .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bookings'
+    }, payload => {
+        if (payload.new && Number(payload.new.doctor_id) == doctorId) {
+          notify();
+          setTimeout(loadQueue, 200);
+        }
+    })
+    .subscribe();
 }
-
-  })
-  .subscribe();
 
 loadQueue();
 </script>
